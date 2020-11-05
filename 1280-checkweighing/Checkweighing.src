@@ -1,0 +1,1655 @@
+
+------------------------------------------------------------------------------
+-- Program Name: CheckWeigher
+-- The 1280 Checkweigher application is included with the 1280 standard 
+-- firmware and is loaded by importing the application from the Configuration 
+-- menu "Import Files".  This application is a static checkweigher with a 
+-- stored low and high Weight associated with an ID.  A digital output will 
+-- be activated for a set time based on under, accept or over, and stores the 
+-- ID, Weight, status (under, accept, over), and time/date in a database.  
+-- The Print key can be pressed to Print the last transaction's ID, Weight, 
+-- status and time/date.  
+------------------------------------------------------------------------------
+
+program CheckWeighing; 
+ 
+#include CheckWeighing.iri 
+
+  -- Constants and aliases definitions 
+  g_csProgName          : constant string  := "Checkweighing"; --Program Name 
+  g_csVersion           : constant string  := "1.04"; --Program Version   
+  g_ciPrinter           : constant integer := 0;
+  g_ciDigInOn           : constant integer := 0; --Digital Input is On 
+  g_ciDigInOff          : constant integer := 1; --Digital Input is Off
+  g_ciDigOutOn          : constant integer := 1; --Digital Output is On
+  g_ciDigOutOff         : constant integer := 0; --Digital Output is Off  
+  g_ciBackDoorPassword  : constant string  := "1234";  --Backdoor Password 
+  g_ciInt32_Max         : constant integer := 2147483647;   
+  g_csPC                : constant string := TCPC1;  
+  
+  -- Inputs/Outputs  
+  g_coUnder   : constant integer := 1;
+  g_coAccept  : constant integer := 2;  
+  g_coOver    : constant integer := 3;
+
+  -- Screens
+  g_ciMain    : constant integer := 1;
+  g_ciSetup   : constant integer := 8; 
+  g_ciIOTest  : constant integer := 4;    
+  
+  -- Operation Modes
+  LockMode                : constant integer := 0;
+  NoMode                  : constant integer := 100;    
+  EnterItemID             : constant integer := 101; 
+  GetID                   : constant integer := 102;
+  ProductOnScale          : constant integer := 103;
+  
+  -- Setup Modes
+  SetupEnterPasswordMode   : constant integer := 999;
+  Setup1Mode               : constant integer := 1000; 
+    SetupChangePasswordMode  : constant integer := 1100;
+      SetupVerifyPasswordMode  : constant integer := 1101; 
+      SetupItemId               : constant integer := 1210;
+        SetupItemName             : constant integer := 1211;
+        SetupItemLowWeight        : constant integer := 1212;
+        SetupItemHighWeight       : constant integer := 1213;               
+      SetupDeleteItem         : constant integer := 1220;
+			SetupClearTransactions  : constant integer := 1230;
+    SetupThresholdWeight    : constant integer := 1300;
+    SendingPCTest           : constant integer := 1400;
+  Setup2Mode               : constant integer := 2000; 
+  EntryMode : integer; 
+
+
+  Blank : constant string := "";      
+  type boolean is (False,True); 
+
+  -- Global/Types variables definitions 
+  g_sSetupPassword : stored string;
+  g_iDownload : stored integer;
+  g_sTmpPassword : string;  
+  g_rCountby : real;    
+  g_bUpdate : boolean;
+  g_iDecimal1 : integer;  
+  g_uUnits : Units; 
+  g_sysResult1 : SysCode; 
+  g_sysResult2 : SysCode;  
+  g_iDebug : integer;
+  g_sItemId : stored string;   
+  g_sItemName : stored string;  
+  g_rLowWeight : stored real;
+  g_rHighWeight : stored real;     
+  g_iAutoPrint : stored real;
+  g_rThresholdWeight : stored real;
+  g_bWeighVault : stored boolean;
+  g_iWidget : integer;
+  g_iTareAttempt : integer;
+  g_rTareWgt : stored real;
+  g_spcResponseBuffer : string;
+  g_sUnits : stored string;
+  g_rTargetWgt : stored real;
+  g_rLastSavedWgt : real;
+  g_bPrintPressed : boolean;
+
+  type CRCTableType is array [256] of integer;
+  crcTable : CRCTableType;   
+
+  ItemDB : ItemDatabase;
+  TransDB : TransDatabase;   
+
+  procedure SetupStartTimer(iTimer : integer; iDuration : integer; itmMode : TimerMode);  -- Setup a Timer and Start                                
+  begin
+  
+    SetTimer(iTimer, iDuration);
+    SetTimerMode(iTimer, itmMode);
+    StartTimer(iTimer);
+    
+  end;     
+  
+  procedure DisableSetPoints;
+  begin
+    
+    DisableSP(1);
+    DisableSP(2);
+    
+  end;
+
+  function GetCurrentUnitsString(s : integer) : string;  -- Gets current units string (lb/kg/etc). 
+    sUnit : Units;
+    sUnitString : string;  
+  begin          
+    
+    if GetUnits(s, sUnit) = SysOk then
+      GetUnitsString(s, sUnit, sUnitString);    
+    else
+      sUnitString := Blank;
+    end if; 
+    
+    return sUnitString; 
+    
+  end;    
+
+  procedure PrintTicket; 
+		sUnits : string;
+  begin  
+
+    sUnits := GetCurrentUnitsString(1);    
+
+		SetPrintText(1, TransDB.ItemId);
+		SetPrintText(2, TransDB.ItemName);
+		SetPrintText(3, RealToString(TransDB.Weight,0,g_iDecimal1) + " " + sUnits);
+		SetPrintText(4, TransDB.Status);
+		SetPrintText(5, Date$(TransDB.DT));
+		SetPrintText(6, Time$(TransDB.DT));
+		Print(AuxFmt1);
+  end;     
+
+  procedure LockMajorKeys;  -- Locks ZERO, GROSS/NET, TARE, UNITS and PRINT key
+  begin
+  
+    LockKey(GrossNetKey);
+    LockKey(TareKey);
+    LockKey(UnitsKey);
+    LockKey(PrintKey);
+    
+  end; 
+
+  procedure UnLockMajorKeys;  -- UnLocks ZERO, GROSS/NET, TARE, UNITS and PRINT key
+  begin
+  
+    UnlockKey(GrossNetKey);
+    UnlockKey(TareKey);
+    UnlockKey(UnitsKey);
+    UnlockKey(PrintKey);
+    
+  end;   
+
+  procedure LockAllKeys; -- Lock All Keys
+  begin
+    LockMajorKeys;
+  end;
+
+  procedure PromptForEntry(sPrompt : string;  iMode : integer; sDefault : string; iType : integer);  -- Prompts operator for data
+  begin
+    
+    DisableHandler(NumericKeyPressed);
+    DisableHandler(EnterKeyPressed);
+    DisableHandler(NavUpKeyPressed);
+    DisableHandler(NavDownKeyPressed);   
+    
+    LockMajorKeys;
+ 
+		SetEntry(sDefault);
+    if iType = 0 then
+      PromptUser(sPrompt);
+    elsif iType = 1 then  
+      PromptPassword(sPrompt);
+    elsif iType = 2 then
+      PromptNumeric(sPrompt);
+    end if;
+    EntryMode := iMode;
+    
+  end;  
+
+  function IsDigits(sNumeric : string) : boolean;  -- Makes ure user entry is numeric       
+    i : integer;
+    sTemp : string;
+    bResult : boolean := True;
+    bDecimal : boolean := False;
+  begin
+  
+    if sNumeric = "." or StringToInteger(sNumeric) >= g_ciInt32_Max then   
+      bResult := False;
+      return bResult;
+    end if;  
+
+    for i := 1 to Len(sNumeric)
+    loop                              
+    
+      sTemp := Mid$(sNumeric, i, 1); 
+      
+      -- ignore first decimal point
+      if sTemp = "." then  
+        if bDecimal = True then   
+          bResult := False;
+          exit;   
+        end if;     
+        bDecimal := True;  
+      end if; 
+      
+      -- ignore negative if first character
+      if i <> 1 and sTemp = "-" then
+        bResult := False;
+        exit;
+      end if;
+      
+      if (sTemp < "0" or sTemp > "9") and sTemp <> "." and sTemp <> "-" then        
+        bResult := False;
+        exit;
+      end if; 
+      
+    end loop;
+        
+    return bResult; 
+    
+  end;   
+
+  function IsValid(sTemp : string; sValidFor : string; iLength : integer) : boolean;  -- Validates a String, Integer and Real
+    bResult : boolean := True; 
+    sMessage : string;
+  begin 
+    
+    sValidFor := UCase$(sValidFor);
+    
+    if sValidFor = "S" then
+    
+      if Len(sTemp) = 0 or (Len(sTemp) > iLength and iLength <> 0) then  
+        bResult := False;
+        sMessage := "Required Entry - Try Again";  
+      end if;      
+        
+    elsif sValidFor = "I" then
+      
+      if isDigits(sTemp) = False then
+        bResult := False;  
+        sMessage := "Invalid Number - Try Again";        
+      elsif (Len(sTemp) = 0 or StringToInteger(sTemp) < 1) and iLength = 0 then   -- iLength to 1 will allow zero for an entry
+        bResult := False;  
+        sMessage := "Invalid Number (0) - Try Again";
+      end if;      
+    
+    elsif sValidFor = "R" then
+    
+      if isDigits(sTemp) = False or StringToReal(sTemp) < 0 then     
+        bResult := False;    
+        sMessage := "Invalid Number - Try Again";
+      elsif (Len(sTemp) = 0 or StringToReal(sTemp) = 0) and iLength = 0 then  -- iLength to 1 will allow zero for an entry
+        bResult := False;    
+        sMessage := "Invalid Number (0) - Try Again";              
+      end if;  
+
+    elsif sValidFor = "P" then
+    
+      if isDigits(sTemp) = False or StringToReal(sTemp) < 0 or StringToReal(sTemp) > 100 then 
+        bResult := False; 
+        sMessage := "Invalid Number (0-100) - Try Again";
+      end if; 
+                
+    else
+      
+      DisplayStatus("Validation Error");
+      bResult := False;
+      
+    end if;
+
+    if bResult = False then
+      if sValidFor = "P" or sValidFor = "R" or sValidFor = "I" then
+        PromptForEntry(sMessage, EntryMode, Blank,2);
+      else  
+        PromptForEntry(sMessage, EntryMode, Blank, 0);
+      end if;
+    end if;
+    
+    return bResult;
+
+  end;  
+
+  function GetMilitaryTime (dtTemp : datetime) : string;   -- Military time
+    iHour: integer;
+    iMin : integer;
+    iSec : integer;
+    sHour : string;
+    sMin : string;  
+    sSec : string;
+    s24HourTime : string;  
+  begin  
+  
+    GetTime(dtTemp, iHour, iMin, iSec); 
+    
+    sHour := IntegerToString(iHour,0);
+    if Len(sHour) = 1 then
+      sHour := "0" + IntegerToString(iHour,0);
+    end if; 
+    sMin := IntegerToString(iMin,0);  
+    if Len(sMin) = 1 then
+      sMin := "0" + IntegerToString(iMin,0);
+    end if;
+    sSec := IntegerToString(iSec,0);  
+    if Len(sSec) = 1 then
+      sSec := "0" + IntegerToString(iSec,0);
+    end if;
+
+    s24HourTime := sHour + sMin + sSec;  
+    return s24HourTime; 
+  
+  end; 
+
+  function GetFormattedDate (dtTemp : datetime) : string; -- Format Date DDMMYYYY 
+    iYear : integer;
+    iMonth : integer;
+    iDay : integer; 
+    sDay : string;
+    sFormattedDate : string := BLANK;  
+    tmpDate : datetime; 
+  begin
+    
+    GetDate(dtTemp, iyear, imonth, iday);  
+    
+    -- Configure month
+    if iday < 10 then                   
+      sDay := "0" + IntegerToString(iDay,0);
+    else
+      sDay := IntegerToString(iDay,0); 
+    end if;  
+
+    sFormattedDate := sDay;         
+    
+    -- Configure Day
+    if iMonth < 10 then                   
+      sFormattedDate := sFormattedDate + "0" + IntegerToString(iMonth,0) ;
+    else
+      sFormattedDate := sFormattedDate + IntegerToString(iMonth,0); 
+    end if;
+    
+    -- configure Year 
+    if iyear < 10 then
+      sFormattedDate := sFormattedDate + "200" + IntegerToString(iyear,0);  
+    else   
+      sFormattedDate := sFormattedDate + "20" + IntegerToString(iyear,0);   
+    end if;
+    
+    sFormattedDate := sFormattedDate + " " + GetMilitaryTime(dtTemp);
+    
+    return sFormattedDate; 
+
+  end; 
+       
+  -- Returns the starting location in "input_string" of
+  -- the first occurance of the string "match_string"
+  function Locate( input_string : string;
+                   match_string : string ) : integer;
+
+    position     : integer;
+    end_position : integer;
+
+
+    begin
+
+      position := 1;
+      end_position := Len(input_string) + 1 - Len(match_string) ;
+
+      while position <= end_position
+      loop
+        if match_string = Mid$(input_string, position, Len(match_string)) then
+          return position;
+        end if;
+        position := position + 1;
+      end loop;
+      return 0;
+  end;
+        
+  -- This function is used to trim "n" characters off a string.
+  function TrimNum$( var input_string : string;
+                     trim_length      : integer ) : string;
+
+    result : string;
+
+    begin
+      if trim_length > 0 then
+        result       := Left$(input_string, trim_length);
+        input_string := Right$(input_string, Len(input_string)-trim_length);
+
+      elsif trim_length < 0 then
+        result       := Right$(input_string, -trim_length);
+        input_string := Left$(input_string, Len(input_string)+trim_length);
+      else
+        result       := "";
+      end if;
+      return result;
+  end;
+
+  --  Strips off all leading occurances in "input_string" of any characters in the string "trim_chars".
+  function TrimLeft$( input_string : string;
+                      trim_chars   : string ) : string;
+
+    result   : string;
+    position : integer := 1;
+
+    begin
+
+      while (position <= Len(input_string))
+      loop
+
+
+        -- If the current character is not in the trim list
+        if ( Locate(trim_chars, Mid$(input_string, position, 1)) = 0 ) then
+
+          -- return remainder of input string
+          result := Mid$(input_string, position, Len(input_string));
+          return result;
+
+        end if;
+
+        position := position + 1;
+
+
+      end loop;
+
+      return "";
+
+  end;   
+
+
+  --  This function is used to parse a single string from
+  --  a passed string using a passed parse character
+  function ParseLeft$( var input_string : string;
+                       parse_char       : string ) : string;
+
+    result   : string;
+    position : integer;
+
+    begin
+
+      -- If blank delimited, remove all leading blanks
+      if parse_char = " " then
+        input_string := TrimLeft$(input_string, " ");
+      end if;
+
+
+      -- Find first occurance of parse character(s)
+      position := Locate(input_string, parse_char);
+
+
+      -- If one is present...
+      if (position > 0) then
+
+        -- Set result = parsed off characters
+        result := TrimNum$(input_string, position-1);
+
+        -- If blank delimited, remove all leading blanks
+        if parse_char = " " then
+          input_string := TrimLeft$(input_string, " ");
+
+        -- Otherwise, remove one occurance of parse character(s)
+        else
+          TrimNum$(input_string, Len(parse_char));
+
+        end if;
+
+
+      -- If no parse character found, result = entire input string
+      else
+        result := input_string;
+        input_string := "";
+      end if;
+
+
+      return result;
+  end;   
+  
+  function CalcDecimal(rCountBy : real) : integer;  -- Calculates the amount of decimal positions  
+    iDecimal : integer := 0;    
+  begin   
+         
+    while rCountBy < 1.0
+    loop    
+      iDecimal := iDecimal + 1;
+      rCountBy := rCountBy * 10.0;  
+     end loop;
+
+     return iDecimal; 
+     
+  end; 
+
+  -- Used in calculating the CheckSum for the WeighVault Protocol
+  procedure InitializeCRC16;
+  begin
+    crcTable[1] := 0;
+    crcTable[2] := 4129;
+    crcTable[3] := 8258;
+    crcTable[4] := 12387;
+    crcTable[5] := 16516;
+    crcTable[6] := 20645;
+    crcTable[7] := 24774;
+    crcTable[8] := 28903;
+    crcTable[9] := 33032;
+    crcTable[10] := 37161;
+    crcTable[11] := 41290;
+    crcTable[12] := 45419;
+    crcTable[13] := 49548;
+    crcTable[14] := 53677;
+    crcTable[15] := 57806;
+    crcTable[16] := 61935;
+    crcTable[17] := 4657;
+    crcTable[18] := 528;
+    crcTable[19] := 12915;
+    crcTable[20] := 8786;
+    crcTable[21] := 21173;
+    crcTable[22] := 17044;
+    crcTable[23] := 29431;
+    crcTable[24] := 25302;
+    crcTable[25] := 37689;
+    crcTable[26] := 33560;
+    crcTable[27] := 45947;
+    crcTable[28] := 41818;
+    crcTable[29] := 54205;
+    crcTable[30] := 50076;
+    crcTable[31] := 62463;
+    crcTable[32] := 58334;
+    crcTable[33] := 9314;
+    crcTable[34] := 13379;
+    crcTable[35] := 1056;
+    crcTable[36] := 5121;
+    crcTable[37] := 25830;
+    crcTable[38] := 29895;
+    crcTable[39] := 17572;
+    crcTable[40] := 21637;
+    crcTable[41] := 42346;
+    crcTable[42] := 46411;
+    crcTable[43] := 34088;
+    crcTable[44] := 38153;
+    crcTable[45] := 58862;
+    crcTable[46] := 62927;
+    crcTable[47] := 50604;
+    crcTable[48] := 54669;
+    crcTable[49] := 13907;
+    crcTable[50] := 9842;
+    crcTable[51] := 5649;
+    crcTable[52] := 1584;
+    crcTable[53] := 30423;
+    crcTable[54] := 26358;
+    crcTable[55] := 22165;
+    crcTable[56] := 18100;
+    crcTable[57] := 46939;
+    crcTable[58] := 42874;
+    crcTable[59] := 38681;
+    crcTable[60] := 34616;
+    crcTable[61] := 63455;
+    crcTable[62] := 59390;
+    crcTable[63] := 55197;
+    crcTable[64] := 51132;
+    crcTable[65] := 18628;
+    crcTable[66] := 22757;
+    crcTable[67] := 26758;
+    crcTable[68] := 30887;
+    crcTable[69] := 2112;
+    crcTable[70] := 6241;
+    crcTable[71] := 10242;
+    crcTable[72] := 14371;
+    crcTable[73] := 51660;
+    crcTable[74] := 55789;
+    crcTable[75] := 59790;
+    crcTable[76] := 63919;
+    crcTable[77] := 35144;
+    crcTable[78] := 39273;
+    crcTable[79] := 43274;
+    crcTable[80] := 47403;
+    crcTable[81] := 23285;
+    crcTable[82] := 19156;
+    crcTable[83] := 31415;
+    crcTable[84] := 27286;
+    crcTable[85] := 6769;
+    crcTable[86] := 2640;
+    crcTable[87] := 14899;
+    crcTable[88] := 10770;
+    crcTable[89] := 56317;
+    crcTable[90] := 52188;
+    crcTable[91] := 64447;
+    crcTable[92] := 60318;
+    crcTable[93] := 39801;
+    crcTable[94] := 35672;
+    crcTable[95] := 47931;
+    crcTable[96] := 43802;
+    crcTable[97] := 27814;
+    crcTable[98] := 31879;
+    crcTable[99] := 19684;
+    crcTable[100] := 23749;
+    crcTable[101] := 11298;
+    crcTable[102] := 15363;
+    crcTable[103] := 3168;
+    crcTable[104] := 7233;
+    crcTable[105] := 60846;
+    crcTable[106] := 64911;
+    crcTable[107] := 52716;
+    crcTable[108] := 56781;
+    crcTable[109] := 44330;
+    crcTable[110] := 48395;
+    crcTable[111] := 36200;
+    crcTable[112] := 40265;
+    crcTable[113] := 32407;
+    crcTable[114] := 28342;
+    crcTable[115] := 24277;
+    crcTable[116] := 20212;
+    crcTable[117] := 15891;
+    crcTable[118] := 11826;
+    crcTable[119] := 7761;
+    crcTable[120] := 3696;
+    crcTable[121] := 65439;
+    crcTable[122] := 61374;
+    crcTable[123] := 57309;
+    crcTable[124] := 53244;
+    crcTable[125] := 48923;
+    crcTable[126] := 44858;
+    crcTable[127] := 40793;
+    crcTable[128] := 36728;
+    crcTable[129] := 37256;
+    crcTable[130] := 33193;
+    crcTable[131] := 45514;
+    crcTable[132] := 41451;
+    crcTable[133] := 53516;
+    crcTable[134] := 49453;
+    crcTable[135] := 61774;
+    crcTable[136] := 57711;
+    crcTable[137] := 4224;
+    crcTable[138] := 161;
+    crcTable[139] := 12482;
+    crcTable[140] := 8419;
+    crcTable[141] := 20484;
+    crcTable[142] := 16421;
+    crcTable[143] := 28742;
+    crcTable[144] := 24679;
+    crcTable[145] := 33721;
+    crcTable[146] := 37784;
+    crcTable[147] := 41979;
+    crcTable[148] := 46042;
+    crcTable[149] := 49981;
+    crcTable[150] := 54044;
+    crcTable[151] := 58239;
+    crcTable[152] := 62302;
+    crcTable[153] := 689;
+    crcTable[154] := 4752;
+    crcTable[155] := 8947;
+    crcTable[156] := 13010;
+    crcTable[157] := 16949;
+    crcTable[158] := 21012;
+    crcTable[159] := 25207;
+    crcTable[160] := 29270;
+    crcTable[161] := 46570;
+    crcTable[162] := 42443;
+    crcTable[163] := 38312;
+    crcTable[164] := 34185;
+    crcTable[165] := 62830;
+    crcTable[166] := 58703;
+    crcTable[167] := 54572;
+    crcTable[168] := 50445;
+    crcTable[169] := 13538;
+    crcTable[170] := 9411;
+    crcTable[171] := 5280;
+    crcTable[172] := 1153;
+    crcTable[173] := 29798;
+    crcTable[174] := 25671;
+    crcTable[175] := 21540;
+    crcTable[176] := 17413;
+    crcTable[177] := 42971;
+    crcTable[178] := 47098;
+    crcTable[179] := 34713;
+    crcTable[180] := 38840;
+    crcTable[181] := 59231;
+    crcTable[182] := 63358;
+    crcTable[183] := 50973;
+    crcTable[184] := 55100;
+    crcTable[185] := 9939;
+    crcTable[186] := 14066;
+    crcTable[187] := 1681;
+    crcTable[188] := 5808;
+    crcTable[189] := 26199;
+    crcTable[190] := 30326;
+    crcTable[191] := 17941;
+    crcTable[192] := 22068;
+    crcTable[193] := 55628;
+    crcTable[194] := 51565;
+    crcTable[195] := 63758;
+    crcTable[196] := 59695;
+    crcTable[197] := 39368;
+    crcTable[198] := 35305;
+    crcTable[199] := 47498;
+    crcTable[200] := 43435;
+    crcTable[201] := 22596;
+    crcTable[202] := 18533;
+    crcTable[203] := 30726;
+    crcTable[204] := 26663;
+    crcTable[205] := 6336;
+    crcTable[206] := 2273;
+    crcTable[207] := 14466;
+    crcTable[208] := 10403;
+    crcTable[209] := 52093;
+    crcTable[210] := 56156;
+    crcTable[211] := 60223;
+    crcTable[212] := 64286;
+    crcTable[213] := 35833;
+    crcTable[214] := 39896;
+    crcTable[215] := 43963;
+    crcTable[216] := 48026;
+    crcTable[217] := 19061;
+    crcTable[218] := 23124;
+    crcTable[219] := 27191;
+    crcTable[220] := 31254;
+    crcTable[221] := 2801;
+    crcTable[222] := 6864;
+    crcTable[223] := 10931;
+    crcTable[224] := 14994;
+    crcTable[225] := 64814;
+    crcTable[226] := 60687;
+    crcTable[227] := 56684;
+    crcTable[228] := 52557;
+    crcTable[229] := 48554;
+    crcTable[230] := 44427;
+    crcTable[231] := 40424;
+    crcTable[232] := 36297;
+    crcTable[233] := 31782;
+    crcTable[234] := 27655;
+    crcTable[235] := 23652;
+    crcTable[236] := 19525;
+    crcTable[237] := 15522;
+    crcTable[238] := 11395;
+    crcTable[239] := 7392;
+    crcTable[240] := 3265;
+    crcTable[241] := 61215;
+    crcTable[242] := 65342;
+    crcTable[243] := 53085;
+    crcTable[244] := 57212;
+    crcTable[245] := 44955;
+    crcTable[246] := 49082;
+    crcTable[247] := 36825;
+    crcTable[248] := 40952;
+    crcTable[249] := 28183;
+    crcTable[250] := 32310;
+    crcTable[251] := 20053;
+    crcTable[252] := 24180;
+    crcTable[253] := 11923;
+    crcTable[254] := 16050;
+    crcTable[255] := 3793;
+    crcTable[256] := 7920;
+
+  end;   
+
+  --   Called to calculate the CRC16 on given data.
+  function CRC16(Buffer : string;
+                 CRCValue : integer;
+                 Length : integer;
+                 Filter : integer) : integer;
+    crc : integer;
+    count : integer;
+    charIndex : integer;
+    char : string;
+    highByte : integer;
+    lowByte : integer;
+  begin
+  	crc := CRCValue;
+  	count := Length;
+  	charIndex := 1;
+  
+  	while count > 0
+  	loop
+  		char := Mid$(Buffer, charIndex, 1);
+  
+  		charIndex := charIndex + 1;
+  
+  		crc := BitAnd(
+  		     BitXor(
+  		          crc * 256,
+  		     crcTable[BitAnd(BitXor(crc / 256, Asc(char)), 255) + 1]),
+  		     65535);
+  
+  	     count := count - 1;
+  	end loop;
+  
+          --
+          -- Filter out common bytes used in the protocol from the CRC
+          --
+  	if Filter <> 0 then
+  	        -- Adjust the low byte if necessary
+  		lowByte := BitAnd(crc, 255);
+  
+  		if lowByte = 13 or lowByte = 10 or lowByte = 0 then  
+  			lowByte := 1;
+  		end if;  
+  
+                  -- Adjust the high byte if necessary
+  		highByte := BitAnd(crc, 65280) / 256;
+  
+  		if highByte = 13 or highByte = 10 or highByte = 0 then
+  			highByte := 1;
+  		end if;   
+  		
+  
+  		crc := BitOr(BitAnd(highByte, 255) * 256, lowByte);
+  	end if;
+       
+       return crc;     
+
+  end;   
+
+--   Get the two-byte CRCR16 valid (as a string) based from the data that
+--   is sent in.
+  function CalculateCRC16(Data : string) : string;
+    crc : integer;
+  begin         
+  
+    crc := CRC16(Data, 0, Len(Data), 1);
+    return Chr$(BitAnd(crc, 255)) + Chr$(BitAnd(crc, 65280) / 256); 
+    
+  end;   
+
+  procedure DisplayVersion;    -- Displays Version Number and program name on startup or exiting config   
+  begin   
+  
+    DisplayStatus(g_csProgName + " " + g_csVersion); 
+    SetLabelText(lbProg, "Program: " + g_csProgName + " " + g_csVersion);  
+    
+  end; 
+
+  procedure TurnOffAllOutputs;  -- Turn off All Outputs
+    i : integer;
+  begin
+    
+    for i := 1 to 3
+    loop
+      SetDigout(0, i, g_ciDigOutOff);
+    end loop;  
+  
+  end;     
+
+  procedure TurnOffWidgets;
+  begin
+
+    setwidgetColor(1, "#F0EEEE");
+    SetLabelText(lbSts1, Blank);
+		SetLabelText(lbAOU, Blank);	
+
+  end;
+  
+  procedure RefreshSetupDisplay;  -- Update display screen in setup menu 
+    sUnits : string;    
+		sPassword : string;
+		i : integer;
+  begin          
+
+		for i := 1 to Len(g_sSetupPassword)
+		loop
+			sPassword := sPassword + "*";
+		end loop;  
+
+    sUnits := GetCurrentUnitsString(1);     
+
+    SetLabelText(lbSet1, "Setup Password ");
+    Setlabeltext(lbSet11, sPassword);          
+    SetLabelText(lbSet2, "Threshold Weight ");
+    setlabeltext(lbSet22, RealToString(g_rThresholdWeight,0,g_iDecimal1) + " " + sUnits);  
+    if g_iAutoPrint = 1 then
+      SetLabelText(lbSet3, "Auto Print: ON");   
+    else
+      SetLabelText(lbSet3, "Auto Print: OFF");  
+    end if;
+    SetLabelText(lbSet4, "Clear Transactions");
+		SetLabelText(lbSet5, "Add/Edit Items");
+    SetLabelText(lbSet6, "Delete Items");
+    SetLabelText(lbSet7, "Import / Export");
+    Setlabeltext(lbSet8, "CW-90 WeighVault");
+    if g_bWeighVault = True then
+      SetLabelText(lbSet88, "Enabled");
+    else
+      SetLabelText(lbSet88, "Disabled");
+    end if;
+    SetLabelText(lbSet9, "WeighVault");
+    SetlabelTExt(lbSet99, "PC Test");		
+  end; 
+  
+  procedure RefreshMainDisplay; 
+    sUnits : string;      
+  begin
+		
+		if g_sItemId <> Blank then
+    	sUnits := GetCurrentUnitsString(CurrentScale);
+    	SetLabelText(lbId2, g_sItemId + " " +  g_sItemName); 
+    	SetLabelText(lbLow, RealToString(g_rLowWeight,0,g_iDecimal1) + " " + sUnits);      
+    	SetLabelText(lbHigh, RealToString(g_rHighWeight,0,g_iDecimal1) + " " + sUnits);
+		
+		else
+    	SetLabelText(lbId2, Blank); 
+    	SetLabelText(lbLow, Blank);      
+    	SetLabelText(lbHigh, "");
+		end if;
+  
+  end;
+
+  procedure SetupScreens;
+  i : integer;
+  begin
+    SetBargraphLevel(barSet1, 100);
+    SetBargraphLevel(barSet2, 100);
+    SetBargraphLevel(barSet3, 100);
+    SetBargraphLevel(barSet4, 100);
+    SetBargraphLevel(barSet5, 100);
+    SetBargraphLevel(barSet6, 100);
+    SetBargraphLevel(barSet7, 100);
+    SetBargraphLevel(barSet8, 100);
+    SetBargraphLevel(barSet9, 100);
+    SetBargraphLevel(barSet10, 100);
+    SetBargraphLevel(barSet12, 100);
+    SetBargraphLevel(barSet13, 100);
+
+  end;
+
+  procedure ToggleOutput(iOUtput : integer);
+    iDigOutSts : integer;
+  begin
+
+    GetDigOut(0, iOutput, iDigOutSts);
+    if iDigOutSts = g_ciDigOutOn then
+      SetDigOut(0, iOutput, g_ciDigOutOff);
+    else
+      SetDigOut(0, iOutput, g_ciDigOutOn);
+    end if;
+
+  end;
+  
+  procedure GoIntoSetupMenu;  -- Enters Setup Menu
+  begin
+ 
+    DisableSetPoints;
+    DisplayStatus("Setup Menu");
+    EntryMode := Setup1Mode;    
+    SelectScreen(g_ciSetup);     
+    RefreshSetupDisplay;     
+  
+  end; 
+
+  procedure ClearStatus(iTime : integer);  -- Removes Display Status Message
+  begin
+    SetupStartTimer(29, iTime, TimerOneShot);
+  end;  
+
+  procedure SendDataToPC(sType : string);   
+    sMessage : string;
+  begin
+    
+    if sType = "TRANS" then
+      SetLabelText(lbPC, "Sending Transaction Data");  
+      sMessage := GetUID +  "|" + 
+                  g_sItemId + "|" +
+                  GetFormattedDate(TransDB.DT) + "|" +
+                  Realtostring(TransDB.Weight,0,g_iDecimal1) + " " + g_sUnits + "|" +
+                  Realtostring(g_rTareWgt,0,g_iDecimal1) + " " + g_sUnits + "|" +
+                  g_sUnits + "|" +
+                  TransDB.Status + "|" + 
+                  RealToString(g_rHighWeight,0,g_iDecimal1) + " " + g_sUnits + "|" +
+                  RealToString(g_rLowWeight,0,g_iDecimal1) + " " + g_sUnits +  "|" +
+                  RealToString(g_rTargetWgt,0,g_iDecimal1) + " " + g_sUnits +  "|";  
+      
+      WriteOut(g_csPC, "TRANS|" + sMessage + CalculateCRC16(sMessage) + "|" + Chr$(13));  
+
+    elsif sType = "TEST" then
+      DisplayStatus("Testing Communication with WeighVault");
+      WriteOut(g_csPC, "TEST|" + Chr$(13));         
+      EntryMode := SendingPCTest;      
+      
+    else
+      SetLabelText(lbPC,"Requesting ID Information");  
+      WriteOut(g_csPC, sType + "|" + Chr$(13));
+      EntryMode := GetId;   
+          
+    end if;
+
+    StopTimer(10);
+    SetupStartTimer(10, 1500, TimerOneShot);     
+
+  end;   
+
+	procedure StoreorSendTransaction(rWeight : real);
+	begin
+	
+		TransDB.ItemId := g_sItemId;
+		TransDB.ItemName := g_sItemName;
+		TransDB.Weight := rWeight;
+		TransDB.DT := SystemTime;
+
+    if g_bWeighVault = False then
+      g_sysResult1 := TransDB.Add;
+      if g_sysResult1 <> SysOk then
+        DisplayStatus("DB Error " + SysCodeToString(g_sysResult1));
+      end if;
+    else    
+      SendDatatoPC("TRANS");
+    end if;
+		
+	end;  
+  
+  procedure ProcessPromptCancel;   -- Performs Cancel operation when cancelling a prompt
+  begin 
+  
+    ClosePrompt;  
+    UnLockMajorKeys;
+    
+    if EntryMode >= Setup1Mode and EntryMode < Setup2Mode then 
+      EntryMode := Setup1Mode;  
+    elsif Entrymode = SetupEnterPasswordMode then 
+      DisableHandler(NumericKeyPressed);  
+      DisableHandler(EnterKeyPressed); 
+      EntryMode := NoMode;
+			DisplayStatus(Blank);
+    else    
+      EntryMode := NoMode;  
+    end if;
+    
+  end;    
+  
+  procedure ProcessDataEntry(sTemp : string);  -- Processing the entered data  
+  begin 
+    
+    ClosePrompt;   
+    UnLockMajorKeys;
+    
+    if EntryMode = SetupChangePasswordMode then
+     
+        g_sTmpPassword := sTemp;
+        PromptForEntry("Re-enter Password to Verify", SetupVerifyPasswordMode, Blank,0);        
+     
+    elsif EntryMode = SetupVerifyPasswordMode then 
+    
+      if sTemp = g_sTmpPassword then    
+        g_sSetupPassword := sTemp;
+        EntryMode := Setup1Mode;
+        DisplayStatus("Password Changed");      
+      else 
+        DisplayStatus("Error: Passwords don't Match");
+        EntryMode := Setup1Mode;  
+      end if;
+    
+    elsif Entrymode = SetupEnterPasswordMode then
+
+      g_sTmpPassword := sTemp;
+      if g_sTmpPassword = g_sSetupPassword or g_sTmpPassword = g_ciBackDoorPassword then  
+        GoIntoSetupMenu;          
+      else      
+        DisplayStatus("Error: Invalid Password");   
+        g_sTmpPassword := Blank;        
+        EntryMode := NoMode;                         
+      end if;    
+
+		elsif EntryMode = SetupThresholdWeight then
+      if IsValid(stemp, "r", 1) then
+        g_rThresholdWeight := StringToReal(sTemp);  
+    		SetSPValue(1, g_rThresholdWeight);
+    		SetSPValue(2, g_rThresholdWeight);  
+				EntryMode := Setup1Mode;
+      end if;   
+
+    elsif EntryMode = SetupItemId then
+      if IsValid(stemp, "s", 15) then
+        ItemDB.Id  :=  sTemp;
+        if ItemDB.FindFirst(Item_Id) = SysOk then
+          g_bUpdate := True;
+          PromptForEntry("Enter Item Name", SetupItemName, ItemDB.Name,0);
+        else
+          g_bUpdate := False;
+          PromptForEntry("Enter Item Name", SetupItemName, Blank,0);
+        end if;
+      end if;
+
+    elsif EntryMode = SetupItemName then
+      if IsValid(stemp, "s",15) then
+        ItemDB.Name  :=  sTemp;
+        if g_bUpdate = True then
+          PromptForEntry("Enter Item Low Weight", SetupItemLowWeight, RealToString(ItemDB.Low,0,g_iDecimal1),2);
+        else
+          PromptForEntry("Enter Item Low Weight", SetupItemLowWeight, Blank,2);
+        end if;
+      end if;
+
+    elsif EntryMode = SetupItemLowWeight then
+      if IsValid(stemp, "r", 1) then
+        ItemDB.Low := StringToReal(sTemp);  
+        if g_bUpdate = True then
+          PromptForEntry("Enter Item High Weight", SetupItemHighWeight, RealToString(ItemDB.High,0,g_iDecimal1),2);
+        else
+          PromptForEntry("Enter Item High Weight", SetupItemHighWeight, Blank,2);
+        end if;       
+      end if;   
+
+    elsif EntryMode = SetupItemHighWeight then
+      if IsValid(stemp, "r", 1 ) then 
+        if StringToReal(sTemp) > ItemDB.Low then
+          ItemDB.High := StringToReal(sTemp);  
+          if g_bUpdate = True then
+            if ItemDB.Update = SysOk then
+              DisplayStatus("Item Updated");
+            else 
+              DisplayStatus("Error: Item DB");
+            end if;
+						-- If Item selected was updated were updating screen
+						if ItemDB.Id = g_sItemId then 
+        			g_sItemId := ItemDB.Id;    
+        			g_sItemName := ItemDB.Name;
+        			g_rLowWeight := ItemDB.Low;
+        			g_rHighWeight := ItemDB.High;  
+              g_rLastSavedWgt := 0;  
+        			RefreshMainDisplay;   
+        			SetLabelText(lbSts1, Blank);  	
+						end if;						
+          else
+            if ItemDB.Add = SysOk then
+              DisplayStatus("Item Added");
+            else 
+              DisplayStatus("Error: Item DB");
+            end if;
+          end if; 				
+          EntryMode := Setup1Mode;      
+        else
+          PromptForEntry("Error High < Low", SetupItemHighWeight, Blank,2);
+        end if; 
+      end if;       
+
+    elsif EntryMode = SetupDeleteItem then
+      ItemDB.Id := sTemp;
+      if ItemDB.FindFirst(Item_Id) = SysOk then
+        if ItemDB.Delete = SysOk then    
+          DisplayStatus("Item Deleted"); 
+        else  
+          DisplayStatus("Error: Item DB");
+        end if;
+				
+				-- If Item selected was updated were updating screen
+				if ItemDB.Id = g_sItemId then 
+        	g_sItemId := Blank;    
+        	g_sItemName := Blank;
+        	g_rLowWeight := 0.0;
+        	g_rHighWeight := 0.0;   
+          g_rLastSavedWgt := 0; 
+        	RefreshMainDisplay;   
+        	SetLabelText(lbSts1, Blank);  	
+				end if;	
+				
+      else
+        DisplayStatus("ID NOT FOUND");
+      end if;
+      EntryMode := Setup1Mode;
+
+    elsif EntryMode = EnterItemID then
+
+      if g_bWeighVault = True then
+        if StringToInteger(sTemp) <= 9999 then
+          SendDatatoPC("GET_ID|" + sTemp); 
+        else
+          PromptForEntry("WeighVault Accepts (1-9999) - Retry", EnterItemID, Blank,0);   
+        end if;
+      else
+        ItemDB.Id := sTemp;
+        
+        if ItemDB.FindFirst(Item_Id) = SysOk then
+          g_sItemId := ItemDB.Id;    
+          g_sItemName := ItemDB.Name;
+          g_rLowWeight := ItemDB.Low;
+          g_rHighWeight := ItemDB.High;   
+          g_rLastSavedWgt := 0; 
+          RefreshMainDisplay;   
+          SetLabelText(lbSts1, Blank);   
+          EntryMode := NoMode;
+        else
+          PromptForEntry("ID NOT Found - Retry", EnterItemID, Blank,0); 
+        end if; 
+      end if;
+			
+		elsif EntryMode = SetupClearTransactions then
+			
+			if sTemp = "Y" then
+				if TransDB.Clear = SysOk then
+				 	DisplayStatus("Transactions Database Cleared");
+				else
+					DisplayStatus("Error Clearing Transaction Database");
+				end if;
+			else
+				DisplayStatus("Transaction Database NOT Cleared");
+			end if;
+			EntryMode := Setup1Mode;
+   
+    end if; 
+
+    if EntryMode >=  Setup1Mode then
+      RefreshSetupDisplay;
+    end if; 
+          
+  end; 
+
+  procedure Ready;  -- Initialization procedure
+  begin
+    
+    UnLockMajorKeys;
+    SetLabelText(lbSts1, Blank);    
+		SetLabelText(lbAOU, Blank);
+    
+    if GetUnits(CurrentScale, g_uUnits) = SysOk then
+      if GetCountBy(CurrentScale, g_uUnits, g_rCountby) = SysOk then
+        g_iDecimal1 := CalcDecimal(g_rCountby); 
+      end if;
+    end if;           
+	
+    SetupScreens;
+    SelectScreen(g_ciMain);  
+    SetSPValue(1, g_rThresholdWeight);
+    SetSPValue(2, g_rThresholdWeight);
+		EnableSP(1);
+    EntryMode := NoMode;
+    RefreshMainDisplay;
+  end;        
+
+  handler Timer1Trip; -- Attempt to tare
+  begin
+    
+    g_iTareAttempt := g_iTareAttempt + 1; 
+    if g_iTareAttempt < 15 then 
+      if SetTare(CurrentScale, g_uUnits, g_rTareWgt) = SysOk then 
+        SetMode(CurrentScale, NetMode);                           
+        StopTimer(1);
+      end if;
+    else 
+      StopTimer(1); 
+      DisplayStatus("Error Taring Scale");
+    end if; 
+            
+  end;    
+
+  handler Timer2Trip;
+  begin
+
+    SEtLabelTExt(lbPC, Blank);
+
+  end;
+
+  handler Timer10Trip;  -- PC Timeout
+  begin
+
+    EnableHandler(WidgetClicked);
+    if EntryMode = SendingPCTest then 
+      DisplayStatus("No PC Response");
+      EntryMode := Setup1Mode;
+    elsif EntryMode = GetId then
+      SetLabelText(lbPC, "Network Problems - Contact Office"); 
+      EntryMode := NoMode;      
+    else
+      SetLabelText(lbPC, "Network Problems - Contact Office");       
+    end if;
+
+  end; 	     
+  
+  handler Timer25Trip;  -- Wait for Standstill check
+    iMotion : integer;   
+    rNetWgt : real;
+		iInRange : integer;
+    rTareWgt : real;
+  begin 
+
+    -- Make sure Item selected
+    if g_sItemId = Blank then  
+      return;
+    end if;		 
+
+    InMotion(CurrentScale, iMotion);
+    GetUnits(CurrentScale, g_uUnits);
+    g_sysResult1 := GetNet(CurrentScale, g_uUnits, rNetWgt); 
+    g_sysResult2 := InRange(CurrentScale, iInRange);   
+    GetTare(CurrentScale, g_uUnits, g_rTareWgt);
+
+    -- Get Net Command
+    if g_sysResult1 <> SysOk then
+      SetLabelText(lbSts1, "Scale Error: " + SysCodeToString(g_sysResult1)); 
+      TurnOffAllOutputs;
+      TurnOffWidgets; 
+      return;
+    end if;
+    
+    -- Check In Range
+    if g_sysResult2 <> SysOk then
+      SetLabelText(lbSts1, "Scale Error: " + SysCodeToString(g_sysResult2));  
+      TurnOffAllOutputs;
+      TurnOffWidgets;
+      return;
+    end if;			
+    
+    -- Validate InRage
+    if iInRange = 0 then  
+      SetLabelText(lbSts1, "Scale NOT In Range");  
+      TurnOffAllOutputs;
+      TurnOffWidgets;
+      return;
+    end if;  
+
+    if EntryMode = NoMode then  
+      return;
+    end if;
+    
+    if rNetWgt < g_rLowWeight then                       
+      SetLabelText(lbAOU, "UNDER");
+      SetWidgetColor(lbAOU, "Orange"); 
+      SetDigout(0, g_coAccept, g_ciDigOutOff);
+      SetDigout(0, g_coOver, g_ciDigOutOff);
+      SetDigout(0, g_coUnder, g_ciDigOutOn);
+      setwidgetColor(1, "Orange");
+    elsif rNetWgt > g_rHighWeight then 
+      SetLabelText(lbAOU, "OVER");
+      SetWidgetColor(lbAOU, "Red"); 
+      SetDigout(0, g_coAccept, g_ciDigOutOff);
+      SetDigout(0, g_coUnder, g_ciDigOutOff);      
+      SetDigout(0, g_coOver, g_ciDigOutOn);
+      setwidgetColor(1, "Red");	
+    else
+      SetLabelText(lbAOU, "ACCEPTED");
+      SetWidgetColor(lbAOU, "Green");
+      setwidgetColor(1, "Green"); 	
+      SetDigout(0, g_coUnder, g_ciDigOutOff);
+      SetDigout(0, g_coOver, g_ciDigOutOff);      
+      SetDigout(0, g_coAccept, g_ciDigOutOn);
+    end if;
+
+    if iMotion = 0 and EntryMode = ProductOnScale then    
+      DisplayStatus(Blank);  
+      SetLabelText(lbSts1,  Blank);  
+                        
+      if rNetWgt < g_rLowWeight then                       
+        SetLabelText(lbAOU, "UNDER");
+				SetWidgetColor(lbAOU, "Orange"); 
+				SetDigout(0, g_coUnder, g_ciDigOutOn);
+				TransDB.Status := "U";
+        setwidgetColor(1, "Orange");
+        g_rLastSavedWgt := rNetWgt;
+      elsif rNetWgt > g_rHighWeight then
+        SetLabelText(lbAOU, "OVER");
+				SetWidgetColor(lbAOU, "Red"); 
+				SetDigout(0, g_coOver, g_ciDigOutOn);
+				TransDB.Status := "O";	
+        setwidgetColor(1, "Red");	
+        g_rLastSavedWgt := rNetWgt;
+      else
+        SetLabelText(lbAOU, "ACCEPTED");
+				SetWidgetColor(lbAOU, "Green");
+        setwidgetColor(1, "Green"); 	
+				SetDigout(0, g_coAccept, g_ciDigOutOn);
+				TransDB.Status := "A";	
+        g_rLastSavedWgt := rNetWgt;
+      end if; 
+
+      SetLabelText(lbSts1, "Last Stable Weight - " + Realtostring(g_rLastSavedWgt,0,g_iDecimal1));
+
+      if g_bPrintPressed = True then
+        StopTimer(25);
+        StoreorSendTransaction(g_rLastSavedWgt);
+        PrintTicket;
+      end if;
+
+
+		end if; 
+ 
+  end;       
+
+  handler SP1Trip; -- Item Above Threshold
+    sUnits : string;
+  begin 
+
+    DisableSP(1); 
+    GetUnits(CurrentScale, g_uUnits);
+    GetUnitsString(CurrentScale, g_uUnits, sUnits);
+    SetWidgetVisibility(setup, Voff);
+    g_bPrintPressed := False;
+    if g_bWeighVault = True then
+      if UCase$(sUnits) = UCase$(g_sUnits) then  
+        EntryMode := ProductOnScale;
+        SetupStartTimer(25, 5, TimerContinuous); 
+      else
+        SetLabelText(lbSts1, "Unit Configuration Mis-Match");
+      end if;
+    else
+      EntryMode := ProductOnScale;
+      SetupStartTimer(25, 5, TimerContinuous); 
+    end if;
+    EnableSP(2);
+    
+  end;  
+
+  handler SP2Trip; -- Item Dropped below Threshold
+  begin
+
+    DisableSP(2);
+    EntryMode := NoMode;
+    StopTimer(25);  
+    SetLabelText(lbSts1, Blank);
+		TurnOffAllOutputs;
+    TurnOffWidgets;
+    SetWidgetVisibility(setup, Von);
+
+    if g_bPrintPressed = False then
+      if g_rLastSavedWgt <> 0 then
+        if g_rLastSavedWgt < g_rLowWeight then                       
+          TransDB.Status := "U";
+        elsif g_rLastSavedWgt > g_rHighWeight then
+          TransDB.Status := "O";		     
+        else
+          TransDB.Status := "A";	       		
+        end if; 
+        StoreorSendTransaction(g_rLastSavedWgt);
+        if g_iAutoPrint = 1 then
+          PrintTicket;
+        end if; 
+      end if;
+    end if;
+
+    EnableSP(1);
+ 
+  end;   
+
+  handler PrintKeyPressed;
+  begin
+
+    if EntryMode = ProductOnScale and g_bPrintPressed = False then  
+      g_bPrintPressed := True;
+    end if;
+
+  end;
+
+  handler Timer29Trip;  -- Removes display status text  
+  begin 
+ 
+    DisplayStatus(Blank);     
+    
+  end;    
+
+  handler UserEntry;  -- Processing a data entry method
+    sTemp : string;  
+  begin   
+  
+    sTemp := GetEntry; 
+    
+    if EventKey = EnterKey then     --Enter key pressed
+      ProcessDataEntry(sTemp); 
+    else                            --Cancel key pressed    
+      ProcessPromptCancel;    
+    end if;
+
+  end;  
+
+	handler UnitsKeyReleased;  -- Just incase secondary units is on (let't refresh decimal and screen)
+	begin
+    if GetUnits(CurrentScale, g_uUnits) = SysOk then
+      if GetCountBy(CurrentScale, g_uUnits, g_rCountby) = SysOk then
+        g_iDecimal1 := CalcDecimal(g_rCountby); 
+      end if;
+    end if;   	
+		RefreshMainDisplay;
+	end;
+
+ handler WidgetClicked;
+  begin
+
+  	DisableHandler(WidgetClicked);
+		g_iWidget := EventWidget;
+		DisplayStatus("");
+
+    if g_iWidget = lbSet1 or g_iWidget = lbSet11 then
+			PromptForEntry("Enter New Password", SetupChangePasswordMode, Blank,0); 
+    elsif g_iWidget = lbSet2 or g_iWidget = lbSet22 then
+      PromptForEntry("Enter Threshold Weight", SetupThresholdWeight, RealToString(g_rThresholdWeight, 0, g_iDecimal1),2);  
+    elsif g_iWidget = lbSet3 then
+		  if g_iAutoPrint = 1 then
+        g_iAutoPrint := 0;
+      else        
+        g_iAutoPrint := 1;
+      end if;
+      RefreshSetupDisplay;      
+    elsif g_iWidget = lbSet4 then 
+		  Setlabeltext(lbl116,"Clear Transaction Database?");
+      EntryMode := SetupClearTransactions;
+      SelectSCreen(5);
+    elsif g_iWidget = lbSet5 then 
+      PromptForEntry("Enter Item Id", SetupItemId, Blank,0);
+    elsif g_iWidget = lbSet6 then
+      PromptForEntry("Enter Item Id", SetupDeleteItem, Blank,0);        
+    elsif g_iWidget = lbSet7 then 
+      KeyPress(DatabaseKey);
+    elsif g_iWidget = lbSet8 or g_iWidget = lbSet88 then 	  
+      if g_bWeighVault = True then
+        g_bWeighVault := False;    
+      else
+        g_bWeighVault := True;    
+      end if;
+      g_sItemId := Blank;    
+      g_sItemName := Blank;
+      g_rLowWeight := 0.0;
+      g_rHighWeight := 0.0; 
+      g_rLastSavedWgt := 0;
+      RefreshMainDisplay;         
+      RefreshSetupDisplay;       
+    elsif g_iWidget = lbSet9 or g_iWidget = lbSet99 then
+      SendDataToPC("TEST");        
+    elsif g_iWidget = lbUnder or g_iWidget = sym36 then
+      ToggleOutput(g_coUnder);
+    elsif g_iWidget = lbAccept or g_iWidget = sym70 then
+      ToggleOutput(g_coAccept);
+    elsif g_iWidget = lbOver or g_iWidget = sym83 then
+      ToggleOutput(g_coOver);
+    elsif g_iWidget = lbID1 then
+      PromptForEntry("Enter ID to Checkweigh", EnterItemID, Blank,0); 
+    elsif g_iWidget = Setup then 
+
+      if EntryMode = noMode then        
+        -- Bypassing password entry if zero or blank
+        if g_sSetupPassword = "0" or g_sSetupPassword = Blank then
+          GoIntoSetupMenu;           
+        else       
+          PromptForEntry("Enter Password", SetupEnterPasswordMode, Blank, 1);
+        end if; 
+      end if;
+
+    elsif g_iWidget = lbYes then
+      EntryMode := SetupClearTransactions;
+      SelectScreen(g_cisetup);
+      ProcessDataEntry("Y");  
+
+    elsif g_iWidget = lbNo then
+      EntryMode := SetupClearTransactions;
+      SelectScreen(g_ciSetup);
+      ProcessDataEntry("N");  
+    elsif g_iWidget = Exit8 then
+      TurnOffAllOutputs;
+      SelectScreen(g_ciMain);
+      EntryMode := NoMode;
+      SetLabelText(lbPC, Blank); 
+			DisplayStatus(Blank);
+			EnableSP(1);
+    end if;
+
+    EnableHandler(WidgetClicked);
+    
+  
+  end;
+  handler ConnectionCharReceived;  -- Communication with PC Program
+    sChar : string;
+    sCmd : string;    
+    sData : string;
+    sResponse : string;
+		sString : string;  
+  begin 
+    
+    StopTimer(10); 
+    sChar := EventChar; 
+    
+    if sChar = Chr$(13) then 
+
+      sData := g_spcResponseBuffer;  
+      g_spcResponseBuffer := Blank; 
+      sCmd := UCase$(ParseLeft$(sData, "|")); 
+      SetLabelText(lbPC, Blank);  
+
+      if sCmd = "TRANS" then 
+        
+        sResponse := ParseLeft$(sData, "|"); 
+        if sResponse = Chr$(6) then
+          SetLabelText(lbPC,"Transaction Stored in WeighVault");   
+          SetupStartTimer(2,500,TimerOneShot);
+        elsif sResponse = Chr$(21) then
+          SetLabelText(lbPC,"Error Storing Transaction");
+       end if; 
+
+      elsif sCmd = "TEST" then       
+        
+        DisplayStatus("CW-90 WeighVault Online"); 
+        EntryMode := Setup1Mode;
+        
+      elsif sCmd = "GET_ID" then         
+     
+        sResponse := ParseLeft$(sData, "|"); 
+        
+        if sResponse = "ID_NOT_FOUND" then
+          SetLabelText(lbPC, "ID NOT Found - Contact Office");
+        elsif sResponse = Chr$(21) then
+          SetLabelText(lbPC, "Error Retreiving Information"); 
+        else 
+          g_sItemId := sResponse;  
+          g_sUnits := ParseLeft$(sData, "|"); 
+          g_rLowWeight := StringToReal(ParseLeft$(sData, "|")); 
+          g_rTargetWgt := StringToReal(ParseLeft$(sData, "|"));
+          g_rHighWeight := StringToReal(ParseLeft$(sData, "|"));
+          g_rTareWgt := StringToReal(ParseLeft$(sData, "|"));
+          g_sItemName := ParseLeft$(sData, "|"); 
+          RefreshMainDisplay;   
+          SetLabelText(lbPC, "ID Recalled");     
+
+          -- Set Tare
+          if g_rTareWgt > 0.0 then
+            ClearTare(1);  
+            g_iTareAttempt := 0;
+            SetupStartTimer(1, 10, TimerContinuous);  
+          else
+            ClearTare(1);
+            SetMode(CurrentScale, GrossMode);
+          end if;
+        end if;
+        EntryMode := NoMode;     
+      end if;   
+      
+    else  
+      
+      if sChar >= Chr$(32) and sChar <= Chr$(125) or (sChar = Chr$(6) or sChar = Chr$(21)) then
+        g_spcResponseBuffer := g_spcResponseBuffer + sChar;  
+      end if;
+      
+    end if;
+
+  end;	      
+
+
+begin
+  
+  DisableSetPoints; 
+  DisplayVersion; 
+  setmenubarcolor("Black");
+
+  if g_iDownload = 0 then
+    g_iDownload := 1;
+    g_sSetupPassword := Blank; 
+    g_rThresholdWeight := 10;
+    g_iAutoPrint := 1;
+    g_bWeighVault := False;
+  end if;    
+  
+  Ready;       
+
+end SZ2177596; 

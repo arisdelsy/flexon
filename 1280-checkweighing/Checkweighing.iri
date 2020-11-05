@@ -1,0 +1,117 @@
+-- Scale Aliases
+Scale1    : constant integer := 1;
+
+-- Digital I/O Aliases
+DIOCRD0   : constant integer := 0;
+DIO0_1    : constant integer := 1;
+DIO0_2    : constant integer := 2;
+DIO0_3    : constant integer := 3;
+DIO0_4    : constant integer := 4;
+DIO0_5    : constant integer := 5;
+DIO0_6    : constant integer := 6;
+DIO0_7    : constant integer := 7;
+DIO0_8    : constant integer := 8;
+
+
+
+-- Analog Output Aliases
+
+-- Database Type Definitions and Field Aliases
+type TransDatabase is database ("Trans")
+    ItemID: String;
+  ItemName: String;
+    Weight: Real;
+    Status: String;
+        DT: DateTime;
+end database;
+type ItemDatabase is database ("Item")
+        ID: String;
+      Name: String;
+       Low: Real;
+      High: Real;
+end database;
+
+Trans_ItemID   : constant integer := 1;
+Trans_ItemName : constant integer := 2;
+Trans_Weight   : constant integer := 3;
+Trans_Status   : constant integer := 4;
+Trans_DT       : constant integer := 5;
+
+Item_ID       : constant integer := 1;
+Item_Name     : constant integer := 2;
+Item_Low      : constant integer := 3;
+Item_High     : constant integer := 4;
+
+
+
+-- Serial Port Aliases
+Port1     : constant integer := 1;
+Port2     : constant integer := 2;
+Port3     : constant integer := 3;
+Port4     : constant integer := 4;
+
+-- Ethernet Communication Aliases
+TCPS      : constant string := "TCPS";
+UDPS      : constant string := "UDPS";
+TCPC1     : constant string := "TCPC1";
+TCPC2     : constant string := "TCPC2";
+
+-- Setpoint Aliases
+SP1       : constant integer :=1;
+SP2       : constant integer :=2;
+
+-- Widget Aliases
+barSet6   : constant integer := 2;
+lbset6    : constant integer := 3;
+line7     : constant integer := 7;
+lbsts1    : constant integer := 8;
+img9      : constant integer := 9;
+lbAOU     : constant integer := 10;
+line35    : constant integer := 35;
+sym36     : constant integer := 36;
+Exit8     : constant integer := 37;
+lbYes     : constant integer := 40;
+lbID2     : constant integer := 47;
+lbPC      : constant integer := 49;
+lbl59     : constant integer := 59;
+barSet1   : constant integer := 62;
+barSet2   : constant integer := 63;
+barSet3   : constant integer := 64;
+barSet4   : constant integer := 65;
+barSet5   : constant integer := 67;
+barSet9   : constant integer := 68;
+barSet10  : constant integer := 69;
+sym70     : constant integer := 70;
+barSet7   : constant integer := 71;
+barSet8   : constant integer := 72;
+lbl73     : constant integer := 73;
+lbSet2    : constant integer := 74;
+lbSet3    : constant integer := 75;
+lbSet5    : constant integer := 76;
+lbSet4    : constant integer := 78;
+lbSet9    : constant integer := 79;
+lbUnder   : constant integer := 80;
+lbSet7    : constant integer := 81;
+lbSet8    : constant integer := 82;
+sym83     : constant integer := 83;
+barSet12  : constant integer := 84;
+lbProg    : constant integer := 85;
+lblow     : constant integer := 86;
+barSet13  : constant integer := 90;
+lbl91     : constant integer := 91;
+lbAccept  : constant integer := 92;
+lbOver    : constant integer := 93;
+line94    : constant integer := 94;
+lbNo      : constant integer := 113;
+lbl116    : constant integer := 116;
+setup     : constant integer := 158;
+lbHigh    : constant integer := 159;
+lbSet99   : constant integer := 160;
+LBID1     : constant integer := 161;
+lbSet1    : constant integer := 201;
+lbSet11   : constant integer := 202;
+lbSet22   : constant integer := 203;
+lbSet88   : constant integer := 204;
+
+USBPRN    : constant string := "USBPRN";
+ADVPRN    : constant string := "ADVPRN";
