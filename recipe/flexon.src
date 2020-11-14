@@ -2,6 +2,8 @@
 -------------------------------------------------------------------------
 -------------------------------------------------------------------------
 -----------------------------------V1.0----------------------------------
+--dimensions of button widgets for screen 1 H:24 W:115
+
 
 program Recipe; 
  
@@ -9,7 +11,7 @@ program Recipe;
 
   -- Constants and aliases definitions 
   g_csProgName          : constant string  := "Recipe"; --Program Name 
-  g_csVersion           : constant string  := "1.02"; --Program Version   
+  g_csVersion           : constant string  := "1.0"; --Program Version   
   g_ciPrinter           : constant integer := 0;
   g_ciDigInOn           : constant integer := 0; --Digital Input is On 
   g_ciDigInOff          : constant integer := 1; --Digital Input is Off
@@ -113,4 +115,100 @@ program Recipe;
   g_arRecipe : stored RecipeArrays;   
        
   IngredDB : IngredDatabase;
-  RecipeDB : RecipeDatabase;       
+  RecipeDB : RecipeDatabase;   
+
+    procedure SetupStartTimer(iTimer : integer; iDuration : integer; itmMode : TimerMode);  -- Setup a Timer and Start                                
+  begin
+  
+    SetTimer(iTimer, iDuration);
+    SetTimerMode(iTimer, itmMode);
+    StartTimer(iTimer);
+    
+  end;     
+  
+  procedure DisableSetPoints;
+  begin
+    
+    DisableSP(1);
+    DisableSP(2);
+    
+  end;
+
+  function GetCurrentUnitsString(s : integer) : string;  -- Gets current units string (lb/kg/etc). 
+    sUnit : Units;
+    sUnitString : string;  
+  begin          
+    
+    if GetUnits(s, sUnit) = SysOk then
+      GetUnitsString(s, sUnit, sUnitString);    
+    else
+      sUnitString := Blank;
+    end if; 
+    
+    return sUnitString; 
+    
+  end;    
+
+  procedure PrintTicket; 
+		sUnits : string;
+  begin  
+
+    sUnits := GetCurrentUnitsString(1);    
+
+		SetPrintText(1, TransDB.ItemId);
+		SetPrintText(2, TransDB.ItemName);
+		SetPrintText(3, RealToString(TransDB.Weight,0,g_iDecimal1) + " " + sUnits);
+		SetPrintText(4, TransDB.Status);
+		SetPrintText(5, Date$(TransDB.DT));
+		SetPrintText(6, Time$(TransDB.DT));
+		Print(AuxFmt1);
+  end;     
+
+  procedure LockMajorKeys;  -- Locks ZERO, GROSS/NET, TARE, UNITS and PRINT key
+  begin
+  
+    LockKey(GrossNetKey);
+    LockKey(TareKey);
+    LockKey(UnitsKey);
+    LockKey(PrintKey);
+    
+  end; 
+
+  procedure UnLockMajorKeys;  -- UnLocks ZERO, GROSS/NET, TARE, UNITS and PRINT key
+  begin
+  
+    UnlockKey(GrossNetKey);
+    UnlockKey(TareKey);
+    UnlockKey(UnitsKey);
+    UnlockKey(PrintKey);
+    
+  end;   
+
+  procedure LockAllKeys; -- Lock All Keys
+  begin
+    LockMajorKeys;
+  end;
+
+  procedure PromptForEntry(sPrompt : string;  iMode : integer; sDefault : string; iType : integer);  -- Prompts operator for data
+  begin
+    
+    DisableHandler(NumericKeyPressed);
+    DisableHandler(EnterKeyPressed);
+    DisableHandler(NavUpKeyPressed);
+    DisableHandler(NavDownKeyPressed);   
+    
+    LockMajorKeys;
+ 
+		SetEntry(sDefault);
+    if iType = 0 then
+      PromptUser(sPrompt);
+    elsif iType = 1 then  
+      PromptPassword(sPrompt);
+    elsif iType = 2 then
+      PromptNumeric(sPrompt);
+    end if;
+    EntryMode := iMode;
+    
+  end;      
+
+  
