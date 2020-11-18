@@ -18,30 +18,38 @@ DIO0_8    : constant integer := 8;
 -- Analog Output Aliases
 
 -- Database Type Definitions and Field Aliases
-type TransDatabase is database ("Trans")
-    ItemID: String;
-  ItemName: String;
-    Weight: Real;
-    Status: String;
-        DT: DateTime;
-end database;
-type ItemDatabase is database ("Item")
-        ID: String;
+type IngredDatabase is database ("Ingred")
+        Id: Integer;
       Name: String;
-       Low: Real;
-      High: Real;
+    Preact: Real;
+end database;
+type RecipeDatabase is database ("Recipe")
+        Id: Integer;
+      Name: String;
+   Ingred1: Integer;
+   Target1: Real;
+   Ingred2: Integer;
+   Target2: Real;
+   Ingred3: Integer;
+   Target3: Real;
+   Ingred4: Integer;
+   Target4: Real;
 end database;
 
-Trans_ItemID   : constant integer := 1;
-Trans_ItemName : constant integer := 2;
-Trans_Weight   : constant integer := 3;
-Trans_Status   : constant integer := 4;
-Trans_DT       : constant integer := 5;
+Ingred_Id       : constant integer := 1;
+Ingred_Name     : constant integer := 2;
+Ingred_Preact   : constant integer := 3;
 
-Item_ID       : constant integer := 1;
-Item_Name     : constant integer := 2;
-Item_Low      : constant integer := 3;
-Item_High     : constant integer := 4;
+Recipe_Id       : constant integer := 1;
+Recipe_Name     : constant integer := 2;
+Recipe_Ingred1  : constant integer := 3;
+Recipe_Target1  : constant integer := 4;
+Recipe_Ingred2  : constant integer := 5;
+Recipe_Target2  : constant integer := 6;
+Recipe_Ingred3  : constant integer := 7;
+Recipe_Target3  : constant integer := 8;
+Recipe_Ingred4  : constant integer := 9;
+Recipe_Target4  : constant integer := 10;
 
 
 
@@ -62,3 +70,34 @@ SP1       : constant integer :=1;
 SP2       : constant integer :=2;
 
 --Widget Aliases
+lbl3      : constant integer := 3;
+barR2     : constant integer := 4;
+barT1     : constant integer := 5;
+barR1     : constant integer := 6;
+barT2     : constant integer := 7;
+lbl8      : constant integer := 8;
+lblTar1   : constant integer := 9;
+lbl10     : constant integer := 10;
+lblRes1   : constant integer := 11;
+lbl12     : constant integer := 12;
+btnEmg1   : constant integer := 13;
+lbl14     : constant integer := 14;
+btnSetP   : constant integer := 15;
+btnRese1  : constant integer := 16;
+btnTarg2  : constant integer := 17;
+btnRese2  : constant integer := 18;
+Exit19    : constant integer := 19;
+btnEmg2   : constant integer := 20;
+btnTarg1  : constant integer := 21;
+lbl22     : constant integer := 22;
+lblTar2   : constant integer := 23;
+lbl24     : constant integer := 24;
+lblRes2   : constant integer := 25;
+lblBatch  : constant integer := 26;
+lbl27     : constant integer := 27;
+lblTot1   : constant integer := 28;
+lbl29     : constant integer := 29;
+lblTot2   : constant integer := 30;
+
+USBPRN    : constant string := "USBPRN";
+ADVPRN    : constant string := "ADVPRN";
