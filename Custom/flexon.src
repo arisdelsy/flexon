@@ -391,11 +391,11 @@ program Recipe;
 		
 		sUnits := GetCurrentUnitsString(1); 
     
-    if g_arRecipe[1].iRecipeId <> 0 then 
+    --if g_arRecipe[1].iRecipeId <> 0 then 
       --SetLabelText(lbRec, "Recipe " + IntegerToString(g_arRecipe[1].iRecipeId,0) + " - " + g_arRecipe[1].sRecipeName);
-    else
+   -- else
       --SetLabelText(lbRec, Blank);
-    end if; 
+    --end if; 
     
     --iStart := lbSt - 3;
     
@@ -406,11 +406,11 @@ program Recipe;
  --       SetLabelText(iStart + (i * 3),  IntegerToString(g_arRecipe[i].iIngredientId,0) + " - " + g_arRecipe[i].sIngredientName);
 --        SetLabelText(iStart + 1 + (i * 3),  RealToString(g_arRecipe[i].rTargetWgt,0,g_iDecimal1) + " " + sUnits);
   --      SetLabelText(iStart + 2 + (i * 3),  RealToString(g_arRecipe[i].rActualWgt,0,g_iDecimal1) + " " + sUnits);
-      else
+     --else
 --        SetLabelText(iStart + (i * 3),  Blank);
 --        SetLabelText(iStart + 1 + (i * 3),  Blank);
 --        SetLabelText(iStart + 2 + (i * 3),  Blank);        
-      end if;
+    --  end if;
       
     end loop;
   
