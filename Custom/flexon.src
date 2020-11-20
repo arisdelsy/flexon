@@ -383,13 +383,13 @@ program Recipe;
   
   end;     
   
-  procedure RefreshMainDisplay;       
-    i : integer;      
-    iStart : integer;
-		sUnits : string;
-  begin
+ -- procedure RefreshMainDisplay;       
+ --   i : integer;      
+ --   iStart : integer;
+--		sUnits : string;
+ -- begin
 		
-		sUnits := GetCurrentUnitsString(1); 
+	--	sUnits := GetCurrentUnitsString(1); 
     
     --if g_arRecipe[1].iRecipeId <> 0 then 
       --SetLabelText(lbRec, "Recipe " + IntegerToString(g_arRecipe[1].iRecipeId,0) + " - " + g_arRecipe[1].sRecipeName);
@@ -399,10 +399,10 @@ program Recipe;
     
     --iStart := lbSt - 3;
     
-    for i := 1 to 4
-    loop  
+   -- for i := 1 to 4
+   -- loop  
       
-      if g_arRecipe[i].sIngredientName <> Blank then
+   --   if g_arRecipe[i].sIngredientName <> Blank then
  --       SetLabelText(iStart + (i * 3),  IntegerToString(g_arRecipe[i].iIngredientId,0) + " - " + g_arRecipe[i].sIngredientName);
 --        SetLabelText(iStart + 1 + (i * 3),  RealToString(g_arRecipe[i].rTargetWgt,0,g_iDecimal1) + " " + sUnits);
   --      SetLabelText(iStart + 2 + (i * 3),  RealToString(g_arRecipe[i].rActualWgt,0,g_iDecimal1) + " " + sUnits);
@@ -412,9 +412,9 @@ program Recipe;
 --        SetLabelText(iStart + 2 + (i * 3),  Blank);        
     --  end if;
       
-    end loop;
-  
-  end;
+   -- end loop;
+ -- 
+ -- end;
 
   procedure ToggleOutput(iOUtput : integer);
     iDigOutSts : integer;
@@ -841,7 +841,7 @@ program Recipe;
         g_iRecipeId := RecipeDB.Id;  
         PopulateRecipeArray; 
         g_iCurrentIngredient := 1;         
-        RefreshMainDisplay;   
+        --RefreshMainDisplay;   
         --SetLabelText(lbSts1, Blank);   
         EntryMode := NoMode;
       else
@@ -855,7 +855,7 @@ program Recipe;
   begin
  
     UnLockMajorKeys;
-    setupScreen;
+--    setupScreen;
     --SetLabelText(lbSts1, Blank);     
     if GetUnits(1, g_uUnits) = SysOk then
       if GetCountBy(1, g_uUnits, g_rCountby) = SysOk then
@@ -864,7 +864,7 @@ program Recipe;
     end if;              
     Paused := No;
     BatchMode := Complete;  
-    RefreshMainDisplay;
+    --RefreshMainDisplay;
     SelectScreen(g_ciMain); 
     EntryMode := NoMode;
   
@@ -877,13 +877,13 @@ program Recipe;
     if RecipeDB.FindFirst(Recipe_Id) = SysOk then   
       DisplayStatus(Blank);    
       PopulateRecipeArray; 
-      RefreshMainDisplay;
+      --RefreshMainDisplay;
       g_iCurrentIngredient := 1;
       Paused := No;
       EntryMode := NoMode;  
       BatchMode := WaitSSTare;  
       LockMajorKeys;  
-      Setwidgetvisibility(setup, Voff);     
+      --Setwidgetvisibility(setup, Voff);     
       SetupStartTimer(1, 10, TimerContinuous);
     
     else 
@@ -910,7 +910,7 @@ program Recipe;
     
     --SetLabelText(lbSts1, "Batch Aborted"); 
     Paused := No;
-    Setwidgetvisibility(setup, Von);         
+--    Setwidgetvisibility(setup, Von);         
     UnLockMajorKeys; 
     BatchMode := Complete;  
     ClearStatus(200);  
@@ -990,16 +990,16 @@ program Recipe;
 	
     if BatchMode = WaitSSTare and Paused = No then
       InMotion(1, iMotion);   
-      if iMotion = 0 then 
+      if iMotion = 0 then
         GetGross(1 , g_uUnits, rScaleWgt);
 				
         if SetTare(1 , g_uUnits, rScaleWgt) = SysOk then
           SetMode(1 , NetMode);          
           BatchMode := Filling;  
-        else
+        --else
           --SetLabelText(lbSts1, "Trying to Tare Scale");
         end if;
-      else
+      --else
         --SetLabelText(lbSts1, "...In Motion..."); 
       end if;      
                 
@@ -1021,7 +1021,7 @@ program Recipe;
       InMotion(1, iMotion); 
       if iMotion = 0 then        
         GetNet(1, g_uUnits, g_arRecipe[g_iCurrentIngredient].rActualWgt);    
-        RefreshMainDisplay;
+        --RefreshMainDisplay;
         
         if g_iCurrentIngredient >= g_iTotalNbrIngredients then 
           ClearTare(Scale1);  
@@ -1043,7 +1043,7 @@ program Recipe;
           BatchMode := WaitSSTare;       
         end if;    
         
-      else
+      --else
         --SetLabelText(lbSts1, "...In Motion...");
       end if;       
       
@@ -1072,7 +1072,7 @@ program Recipe;
         UnLockMajorKeys;    
         ClearStatus(200);  
         --Setwidgetvisibility(setup, Von);        
-      else    
+      --else    
         --SetLabelText(lbSts1, "...Discharge Delay...");
       end if; 
 
@@ -1145,7 +1145,7 @@ program Recipe;
         g_iDecimal1 := CalcDecimal(g_rCountby); 
       end if;
     end if;   	
-		RefreshMainDisplay;
+		--RefreshMainDisplay;
 	end; 
 
  handler WidgetClicked;
@@ -1158,78 +1158,78 @@ program Recipe;
    
   end;
 
-  handler Timer4Trip;
-  begin
+  --handler Timer4Trip;
+  --begin
 
     --if g_iWidget = lbSet1 or g_iWidget = lbSet11 then
-			PromptForEntry("Enter New Password", SetupChangePasswordMode, Blank,0); 
+			--PromptForEntry("Enter New Password", SetupChangePasswordMode, Blank,0); 
     --elsif g_iWidget = lbSet2 or g_iWidget = lbSet22 then
-      PromptForEntry("Enter Empty Weight", SetupScaleEmptyWeightMode, RealToString(g_rScaleEmptyWeight, 0, g_iDecimal1),2); 
+      --PromptForEntry("Enter Empty Weight", SetupScaleEmptyWeightMode, RealToString(g_rScaleEmptyWeight, 0, g_iDecimal1),2); 
     --elsif g_iWidget = lbSet3 or g_iwidget = lbSet33 then
-      PromptForEntry("Enter Discharge Time (sec) ", SetupScaleDischargeTimeMode, RealToString(g_rScaleDischargeTime, 0, 1),2);     
+      --PromptForEntry("Enter Discharge Time (sec) ", SetupScaleDischargeTimeMode, RealToString(g_rScaleDischargeTime, 0, 1),2);     
     --elsif g_iWidget = lbSet4 then 
-      KeyPress(DatabaseKey);
+      --KeyPress(DatabaseKey);
     --elsif g_iWidget = lbSet5 or g_iWidget = lbSet55 then 
-      PromptForEntry("Enter Ingredient Id (1-4)", SetupIngredId, Blank,2);
+      --PromptForEntry("Enter Ingredient Id (1-4)", SetupIngredId, Blank,2);
     --elsif g_iWidget = lbSet6 or g_iWidget = lbSet66 then
-      PromptForEntry("Enter Ingredient Id (1-4)", SetupDeleteIngred, Blank,2);        
+      --PromptForEntry("Enter Ingredient Id (1-4)", SetupDeleteIngred, Blank,2);        
     --elsif g_iWidget = lbSet7 or g_iWidget = lbSet77 then 
-      PromptForEntry("Enter Recipe Id", SetupRecipeId, Blank,2);
+      --PromptForEntry("Enter Recipe Id", SetupRecipeId, Blank,2);
     --elsif g_iWidget = lbSet8 or g_iWidget = lbSet88 then 	  
-      PromptForEntry("Enter Recipe Id", SetupDeleteRecipe, Blank,2);     
+      --PromptForEntry("Enter Recipe Id", SetupDeleteRecipe, Blank,2);     
     --elsif g_iWidget = lbI1 then
-      ToggleOutput(g_coIngredient1);
+      --ToggleOutput(g_coIngredient1);
     --elsif g_iWidget = lbI2 then
-      ToggleOutput(g_coIngredient2);
+     -- ToggleOutput(g_coIngredient2);
     --elsif g_iWidget = lbI3 then
-      ToggleOutput(g_coIngredient3);
+      --ToggleOutput(g_coIngredient3);
     --elsif g_iWidget = lbI4 then
-      ToggleOutput(g_coIngredient4);   
+     --ToggleOutput(g_coIngredient4);   
     --elsif g_iWidget = lbD then
-      ToggleOutput(g_coDischarge);   
+     -- ToggleOutput(g_coDischarge);   
     --elsif g_iWidget = lbRec and EntryMode = NoMode and BatchMode = Complete then 
-      PromptForEntry("Enter Recipe Id", EnterRecipeID, Blank,2);
+     -- PromptForEntry("Enter Recipe Id", EnterRecipeID, Blank,2);
     --elsif g_iWidget = 1 then
-      SelectScreen(4);
+      --SelectScreen(4);
     --elsif g_iWidget = Exit4 then 
-      SelectScreen(1);
+     -- SelectScreen(1);
     --elsif g_iWidget = lbZero then
-      KeyPress(ZeroKey);
+     -- KeyPress(ZeroKey);
     --elsif g_iWidget = lbTare then 
-      KeyPress(TareKey);
+     -- KeyPress(TareKey);
     --elsif g_iWidget = lbUnit then 
-      KeyPress(UnitsKey);
+     -- KeyPress(UnitsKey);
     --elsif g_iWidget = lbGN then
-      KeyPress(GrossNetKey);
+     -- KeyPress(GrossNetKey);
     --elsif g_iWidget = LbPrint then
-      KeyPress(PrintKey);
+      --KeyPress(PrintKey);
     --elsif g_iWidget = lbKTare then
-      KeyPress(KeyedTareKey);
+     -- KeyPress(KeyedTareKey);
     --elsif g_iWidget = lbAuxP then
-      KeyPress(AuxPrintKey); 
+     -- KeyPress(AuxPrintKey); 
 
     --elsif g_iWidget = Setup then 
 
-      if EntryMode = noMode and BatchMode = Complete then     
+     -- if EntryMode = noMode and BatchMode = Complete then     
         -- Bypassing password entry if zero or blank
-        if g_sSetupPassword = "0" or g_sSetupPassword = Blank then
-          GoIntoSetupMenu;           
-        else       
-          PromptForEntry("Enter Password", SetupEnterPasswordMode, Blank, 1);
-        end if; 
-      end if;
+       -- if g_sSetupPassword = "0" or g_sSetupPassword = Blank then
+         -- GoIntoSetupMenu;           
+        --else       
+          --PromptForEntry("Enter Password", SetupEnterPasswordMode, Blank, 1);
+        --end if; 
+      --end if;
 
     --elsif g_iWidget = Exit9 then
-      SelectScreen(g_ciMain);
-      EntryMode := NoMode;
-			DisplayStatus(Blank);
-      TurnOffAllOutputs;
+      --SelectScreen(g_ciMain);
+      --EntryMode := NoMode;
+			--DisplayStatus(Blank);
+      --TurnOffAllOutputs;
 
-    end if;
+    --end if;
 
-    EnableHandler(WidgetClicked);
+    ---EnableHandler(WidgetClicked);
 
-  end;     
+  --end;     
 
 begin
 
