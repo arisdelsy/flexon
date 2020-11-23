@@ -854,9 +854,7 @@ program Recipe;
   procedure Ready;  -- Initialization procedure
   begin
  
-    UnLockMajorKeys;
---    setupScreen;
-    --SetLabelText(lbSts1, Blank);     
+    UnLockMajorKeys;  
     if GetUnits(1, g_uUnits) = SysOk then
       if GetCountBy(1, g_uUnits, g_rCountby) = SysOk then
         g_iDecimal1 := CalcDecimal(g_rCountby); 
@@ -870,29 +868,29 @@ program Recipe;
   
   end;    
 
-  procedure StartProcess;  -- Start Process
-  begin
+  --procedure StartProcess;  -- Start Process
+  --begin
 
-    RecipeDB.Id := g_iRecipeId;   
-    if RecipeDB.FindFirst(Recipe_Id) = SysOk then   
-      DisplayStatus(Blank);    
-      PopulateRecipeArray; 
-      --RefreshMainDisplay;
-      g_iCurrentIngredient := 1;
-      Paused := No;
-      EntryMode := NoMode;  
-      BatchMode := WaitSSTare;  
-      LockMajorKeys;  
+  --  RecipeDB.Id := g_iRecipeId;   
+  --  if RecipeDB.FindFirst(Recipe_Id) = SysOk then   
+  --    DisplayStatus(Blank);    
+  --    PopulateRecipeArray; 
+  --    --RefreshMainDisplay;
+  --    g_iCurrentIngredient := 1;
+  --    Paused := No;
+  --    EntryMode := NoMode;  
+  --    BatchMode := WaitSSTare;  
+  --    LockMajorKeys;  
       --Setwidgetvisibility(setup, Voff);     
-      SetupStartTimer(1, 10, TimerContinuous);
+ --     SetupStartTimer(1, 10, TimerContinuous);
     
-    else 
+  --  else 
       --SetLabelText(lbSts1, "Error Loading Recipe");
-      ClearStatus(100);
+  --   ClearStatus(100);
     
-    end if;
+  --  end if;
 
-  end;    
+  --end;    
 
   procedure StopProcess;  -- Stop Process after its been started 
   begin                        
@@ -949,12 +947,12 @@ program Recipe;
       -- Get status of Emergency Mushroom switch
       GetDigin(0, g_ciEStop, iDigInSts);  
   
-      if iDigInsts = 0 then 
-        StartProcess;
-      else
+      --if iDigInsts = 0 then 
+        --StartProcess;
+      --else
         --SetLabelText(lbSts1, "Check E-Stop");   
         ClearStatus(100);
-      end if;      
+      --end if;      
         
     elsif EntryMode = NoMode and Paused = Yes and BatchMode <> Complete then    
       -- Get status of Emergency Mushroom switch
@@ -1115,14 +1113,7 @@ program Recipe;
     RestartProcess; 
     
   end;  
-
-  handler Timer29Trip;  -- Removes display status text  
-  begin 
- 
-    DisplayStatus(Blank);     
-    --SetLabelText(lbSts1, Blank);
-    
-  end;    
+   
 
   handler UserEntry;  -- Processing a data entry method
     sTemp : string;  
@@ -1158,11 +1149,11 @@ program Recipe;
    
   end;
 
-  --handler Timer4Trip;
-  --begin
+  handler Timer4Trip;
+  begin
 
-    --if g_iWidget = lbSet1 or g_iWidget = lbSet11 then
-			--PromptForEntry("Enter New Password", SetupChangePasswordMode, Blank,0); 
+    if g_iWidget = btnSetP then
+			PromptForEntry("Enter New Password", SetupChangePasswordMode, Blank,0); 
     --elsif g_iWidget = lbSet2 or g_iWidget = lbSet22 then
       --PromptForEntry("Enter Empty Weight", SetupScaleEmptyWeightMode, RealToString(g_rScaleEmptyWeight, 0, g_iDecimal1),2); 
     --elsif g_iWidget = lbSet3 or g_iwidget = lbSet33 then
@@ -1208,28 +1199,29 @@ program Recipe;
     --elsif g_iWidget = lbAuxP then
      -- KeyPress(AuxPrintKey); 
 
-    --elsif g_iWidget = Setup then 
+    elsif g_iWidget = lbl8 or g_iWidget = lbl10 or g_iWidget = lbl22
+      or g_iWidget = lbl24 then 
 
-     -- if EntryMode = noMode and BatchMode = Complete then     
-        -- Bypassing password entry if zero or blank
-       -- if g_sSetupPassword = "0" or g_sSetupPassword = Blank then
-         -- GoIntoSetupMenu;           
-        --else       
-          --PromptForEntry("Enter Password", SetupEnterPasswordMode, Blank, 1);
-        --end if; 
-      --end if;
+      if EntryMode = noMode and BatchMode = Complete then     
+         --Bypassing password entry if zero or blank
+        if g_sSetupPassword = "0" or g_sSetupPassword = Blank then
+          GoIntoSetupMenu;           
+        else       
+          PromptForEntry("Enter Password", SetupEnterPasswordMode, Blank, 1);
+        end if; 
+      end if;
 
-    --elsif g_iWidget = Exit9 then
-      --SelectScreen(g_ciMain);
-      --EntryMode := NoMode;
-			--DisplayStatus(Blank);
-      --TurnOffAllOutputs;
+    elsif g_iWidget = Exit19 then
+      SelectScreen(g_ciMain);
+      EntryMode := NoMode;
+			DisplayStatus(Blank);
+      TurnOffAllOutputs;
 
-    --end if;
+    end if;
 
-    ---EnableHandler(WidgetClicked);
+    EnableHandler(WidgetClicked);
 
-  --end;     
+  end;     
 
 begin
 
