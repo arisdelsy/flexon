@@ -4,6 +4,11 @@
 -----------------------------------V1.0.1--------------------------------
 --added procedures to turn on/off widgets for scale 2
 --NOT READY TO COMPILE
+--going through anything we may not need
+--Things we do not need
+-- * anything with the ingredient database
+--Things to change
+-- * Change the recipe db storing the ingredient to store the reset value
 
 
 
