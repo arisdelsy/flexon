@@ -27,15 +27,17 @@ type RecipeDatabase is database ("Recipe")
         Id: Integer;
       Name: String;
    --Ingred1: Integer;
-   Reset1: Integer;
+   Reset1: Real;
    Target1: Real;
    --Ingred2: Integer;
-   Reset1: Integer;
+   Reset2: Real;
    Target2: Real;
    --Ingred3: Integer;
-   --Target3: Real;
+   Reset3: Real;
+   Target3: Real;
    --Ingred4: Integer;
-   --Target4: Real;
+   Reset4: Real;
+   Target4: Real;
 end database;
 
 Ingred_Id       : constant integer := 1;
