@@ -1,8 +1,8 @@
 -----------------------------ALINGTON SCALE CO.--------------------------
 -------------------------------------------------------------------------
 -------------------------------------------------------------------------
------------------------------------V1.0.1--------------------------------
---added procedures to turn on/off widgets for scale 2
+-----------------------------------V1.0.2--------------------------------
+--configuring buttons
 --NOT READY TO COMPILE
 
 
@@ -48,13 +48,13 @@ program Recipe;
     SetupVerifyPasswordMode  : constant integer := 1101;
     SetupRecipeId             : constant integer := 1210;
       SetupRecipeName           : constant integer := 1211;
-      SetupRecipeIngred1        : constant integer := 1212;
+      SetupRecipeReset1        : constant integer := 1212;
       SetupRecipeTarget1        : constant integer := 1213;
-      SetupRecipeIngred2        : constant integer := 1214;
+      SetupRecipeReset2        : constant integer := 1214;
       SetupRecipeTarget2        : constant integer := 1215;
-      SetupRecipeIngred3        : constant integer := 1216;
+      SetupRecipeReset3        : constant integer := 1216;
       SetupRecipeTarget3        : constant integer := 1217;
-      SetupRecipeIngred4        : constant integer := 1218;
+      SetupRecipeReset4        : constant integer := 1218;
       SetupRecipeTarget4        : constant integer := 1219;                
     SetupDeleteRecipe         : constant integer := 1220;
     --SetupIngredId             : constant integer := 1230;
@@ -444,8 +444,8 @@ program Recipe;
     loop
       g_arRecipe[i].iRecipeId := 0; 
       g_arRecipe[i].sRecipeName := Blank; 
-      g_arRecipe[i].iIngredientId := 0; 
-      g_arRecipe[i].sIngredientName := Blank;
+      --g_arRecipe[i].iIngredientId := 0; 
+      --g_arRecipe[i].sIngredientName := Blank;
       g_arRecipe[i].rTargetWgt := 0.0;    
       g_arRecipe[i].rPreactWgt := 0.0;
       g_arRecipe[i].rActualWgt := 0.0;            
@@ -465,10 +465,10 @@ program Recipe;
         i := i + 1;  
         g_arRecipe[i].iRecipeId := RecipeDB.Id; 
         g_arRecipe[i].sRecipeName := RecipeDB.Name; 
-        g_arRecipe[i].iIngredientId := IngredDB.Id; 
-        g_arRecipe[i].sIngredientName := IngredDB.Name;
+        --g_arRecipe[i].iIngredientId := IngredDB.Id; 
+        --g_arRecipe[i].sIngredientName := IngredDB.Name;
         g_arRecipe[i].rTargetWgt := RecipeDB.Target1;    
-        g_arRecipe[i].rPreactWgt := IngredDB.Preact; 
+        --g_arRecipe[i].rPreactWgt := IngredDB.Preact; 
         SetSPValue(RecipeDB.Ingred1, g_arRecipe[i].rTargetWgt - g_arRecipe[i].rPreactWgt);              
       end if; 
     end if; 
