@@ -1,10 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <Indicator>
-  <Revision value="1.0.1.21767" />
+  <Revision value="1.0.2.28550" />
   <IndicatorModel value="1280" />
   <IndicatorVersion value="2.00" />
   <ChildAssembly value="rev1280.v306.dll" />
-  <ConfigHash value="49 39 213 76 15 253 247 186 139 15 172 115 32 14 31 164 43 126 166 127 " />
+  <ConfigHash value="153 249 7 174 123 221 8 126 76 41 129 185 35 209 48 246 84 84 243 86 " />
   <CODFile value="" />
   <Config>SC.ALIAS#1=Scale1
 SC.CAPACITY#1=10000
@@ -704,8 +704,10 @@ DIO.7#0=OFF
 DIO.ALIAS.7#0=DIO0_7
 DIO.8#0=OFF
 DIO.ALIAS.8#0=DIO0_8
-DB.SCHEMA#1=200,0,Reset1,5,8,Target1,5,8,Reset2,5,8,Target2,5,8,Reset3,5,8,Target3,5,8,Reset4,5,8,Target4,5,8
-DB.ALIAS#1=Recipe
+DB.SCHEMA#1=200,0,Target,5,8,Reset,5,8
+DB.ALIAS#1=DB1
+DB.SCHEMA#2=200,0,Target,5,8,Reset,5,8
+DB.ALIAS#2=DB2
 EDP.ADDRESS#1=0
 EDP.ALIAS#1=Port1
 EDP.BAUD#1=115200
@@ -13723,7 +13725,7 @@ WDGT#26=4,25,319,133,58,Caption,1,3,12,Black,lblBatch,2,0,0,1,1
 WDGT#27=4,295,279,194,25,Total (S1),1,3,12,Black,lbl27,4,0,0,1,1
 WDGT#28=4,295,304,194,71,Caption,1,3,12,Black,lblTot1,2,0,0,1,1
 WDGT#29=4,488,279,194,25,Total (S2),1,3,12,Black,lbl29,4,0,0,1,1
-WDGT#30=4,489,309,194,71,Caption,1,3,12,Black,lblTot2,2,0,0,1,1
+WDGT#30=4,488,309,194,71,Caption,1,3,12,Black,lblTot2,2,0,0,1,1
 AUTOBKLGHT=OFF
 BKLGHT=MED
 EMAIL.ENABLE_NOTIFICATION=OFF
