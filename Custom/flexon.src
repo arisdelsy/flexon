@@ -1,14 +1,11 @@
 -----------------------------ALINGTON SCALE CO.--------------------------
 -------------------------------------------------------------------------
 -------------------------------------------------------------------------
------------------------------------V1.0.2--------------------------------
+-----------------------------------V1.0.3--------------------------------
 --configuring buttons
+--configuring databases
+--setup preset screen on rev file
 --NOT READY TO COMPILE
---going through anything we may not need
---Things we do not need
--- * anything with the ingredient database
---Things to change
--- * Change the recipe db storing the ingredient to store the reset value
 
 
 
@@ -18,7 +15,7 @@ program Recipe;
 
   -- Constants and aliases definitions 
   g_csProgName          : constant string  := "Recipe"; --Program Name 
-  g_csVersion           : constant string  := "1.0.1"; --Program Version   
+  g_csVersion           : constant string  := "1.0.3"; --Program Version   
   g_ciPrinter           : constant integer := 0;
   g_ciDigInOn           : constant integer := 0; --Digital Input is On 
   g_ciDigInOff          : constant integer := 1; --Digital Input is Off
@@ -51,21 +48,17 @@ program Recipe;
   Setup1Mode               : constant integer := 1000; 
     SetupChangePasswordMode  : constant integer := 1100;
     SetupVerifyPasswordMode  : constant integer := 1101;
-    SetupRecipeId             : constant integer := 1210;
-      SetupRecipeName           : constant integer := 1211;
-      SetupRecipeReset1        : constant integer := 1212;
+    --SetupRecipeId             : constant integer := 1210;
+      --SetupRecipeName           : constant integer := 1211;
+      SetupRecipeIngred1        : constant integer := 1212;
       SetupRecipeTarget1        : constant integer := 1213;
-      SetupRecipeReset2        : constant integer := 1214;
-      SetupRecipeTarget2        : constant integer := 1215;
-      SetupRecipeReset3        : constant integer := 1216;
-      SetupRecipeTarget3        : constant integer := 1217;
-      SetupRecipeReset4        : constant integer := 1218;
-      SetupRecipeTarget4        : constant integer := 1219;                
+      SetupRecipeIngred2        : constant integer := 1214;
+      SetupRecipeTarget2        : constant integer := 1215;            
     SetupDeleteRecipe         : constant integer := 1220;
     --SetupIngredId             : constant integer := 1230;
       --SetupIngredName           : constant integer := 1231;
-     -- SetupIngredPreact         : constant integer := 1232;
-   -- SetupDeleteIngred         : constant integer := 1240; 
+      --SetupIngredPreact         : constant integer := 1232;
+    --SetupDeleteIngred         : constant integer := 1240; 
     SetupScaleEmptyWeightMode  : constant integer := 1300;
     SetupScaleDischargeTimeMode : constant integer := 1301; 
   Setup2Mode                     : constant integer :=  2000; 	
@@ -120,8 +113,7 @@ program Recipe;
   -- Database display array
   g_arRecipe : stored RecipeArrays;   
        
-  IngredDB : IngredDatabase;
-  RecipeDB : RecipeDatabase;       
+  Scale1DB : S1Database;       
 
 
 
@@ -139,8 +131,8 @@ program Recipe;
     
     DisableSP(1);
     DisableSP(2);
-    DisableSP(3);
-    DisableSP(4);
+    --DisableSP(3);
+    --DisableSP(4);
     
   end;
 
@@ -243,6 +235,17 @@ program Recipe;
     Setwidgetvisibility(lblRes2, Voff);
     Setwidgetvisibility(lbl29, Voff);
     Setwidgetvisibility(lblTot2, Voff);
+  end;
+
+  procedure CheckForScale2; --Checks for scale 2 and enables the widgets
+  begin
+
+    if AcquireTare(Scale2) <> SysOk then
+      TurnOffScale2Widgets;
+    else
+      TurnOnScale2Widgets;
+    end if;
+  
   end;
 
   procedure UnLockMajorKeys;  -- UnLocks ZERO, GROSS/NET, TARE, UNITS and PRINT key
@@ -458,72 +461,6 @@ program Recipe;
          
   end;     
 
-  procedure PopulateRecipeArray; --LOOK HERE
-    i : integer := 0;
-  begin 
-    
-    ClearRecipeArray;   
-      
-    IngredDB.Id := RecipeDB.Ingred1;
-    if IngredDB.FindFirst(Ingred_Id) = SysOk then 
-      if RecipeDB.Target1 <> 00.00 then  -- Don't include ingredients with a target of zero 
-        i := i + 1;  
-        g_arRecipe[i].iRecipeId := RecipeDB.Id; 
-        g_arRecipe[i].sRecipeName := RecipeDB.Name; 
-        --g_arRecipe[i].iIngredientId := IngredDB.Id; 
-        --g_arRecipe[i].sIngredientName := IngredDB.Name;
-        g_arRecipe[i].rTargetWgt := RecipeDB.Target1;    
-        --g_arRecipe[i].rPreactWgt := IngredDB.Preact; 
-        SetSPValue(RecipeDB.Ingred1, g_arRecipe[i].rTargetWgt - g_arRecipe[i].rPreactWgt);              
-      end if; 
-    end if; 
-
-    IngredDB.Id := RecipeDB.Ingred2;
-    if IngredDB.FindFirst(Ingred_Id) = SysOk then 
-      if RecipeDB.Target2 <> 00.00 then  -- Don't include ingredients with a target of zero 
-        i := i + 1;  
-        g_arRecipe[i].iRecipeId := RecipeDB.Id; 
-        g_arRecipe[i].sRecipeName := RecipeDB.Name; 
-        g_arRecipe[i].iIngredientId := IngredDB.Id; 
-        g_arRecipe[i].sIngredientName := IngredDB.Name;
-        g_arRecipe[i].rTargetWgt := RecipeDB.Target2;    
-        g_arRecipe[i].rPreactWgt := IngredDB.Preact;  
-        SetSPValue(RecipeDB.Ingred2, g_arRecipe[i].rTargetWgt - g_arRecipe[i].rPreactWgt);             
-      end if; 
-    end if;
-
-    IngredDB.Id := RecipeDB.Ingred3;
-    if IngredDB.FindFirst(Ingred_Id) = SysOk then 
-      if RecipeDB.Target3 <> 00.00 then  -- Don't include ingredients with a target of zero 
-        i := i + 1;  
-        g_arRecipe[i].iRecipeId := RecipeDB.Id; 
-        g_arRecipe[i].sRecipeName := RecipeDB.Name; 
-        g_arRecipe[i].iIngredientId := IngredDB.Id; 
-        g_arRecipe[i].sIngredientName := IngredDB.Name;
-        g_arRecipe[i].rTargetWgt := RecipeDB.Target3;    
-        g_arRecipe[i].rPreactWgt := IngredDB.Preact;   
-        SetSPValue(RecipeDB.Ingred3, g_arRecipe[i].rTargetWgt - g_arRecipe[i].rPreactWgt);            
-      end if; 
-    end if; 
-
-    IngredDB.Id := RecipeDB.Ingred4;
-    if IngredDB.FindFirst(Ingred_Id) = SysOk then 
-      if RecipeDB.Target4 <> 00.00 then  -- Don't include ingredients with a target of zero 
-        i := i + 1;  
-        g_arRecipe[i].iRecipeId := RecipeDB.Id; 
-        g_arRecipe[i].sRecipeName := RecipeDB.Name; 
-        g_arRecipe[i].iIngredientId := IngredDB.Id; 
-        g_arRecipe[i].sIngredientName := IngredDB.Name;
-        g_arRecipe[i].rTargetWgt := RecipeDB.Target4;    
-        g_arRecipe[i].rPreactWgt := IngredDB.Preact;
-        g_arRecipe[i].rActualWgt := 0.0;    
-        SetSPValue(RecipeDB.Ingred4, g_arRecipe[i].rTargetWgt - g_arRecipe[i].rPreactWgt);             
-      end if; 
-    end if;		
-
-    g_iTotalNbrIngredients := i;
-
-  end;   
 
 --CHECK
   procedure ProcessPromptCancel;   -- Performs Cancel operation when cancelling a prompt
@@ -581,205 +518,56 @@ program Recipe;
         EntryMode := Setup1Mode;
       end if;
 
-    elsif EntryMode = SetupRecipeId then
-      if IsValid(stemp, "i", 0) then
-        RecipeDB.Id  :=  StringToInteger(sTemp);
-        if RecipeDB.FindFirst(Recipe_Id) = SysOk then
-          g_bUpdate := True;
-          PromptForEntry("Enter Recipe Name", SetupRecipeName, RecipeDB.Name,0);
-        else
-          g_bUpdate := False;
-          PromptForEntry("Enter Recipe Name", SetupRecipeName, Blank,0);
-        end if;
-      end if;
+--    elsif EntryMode = SetupRecipeId then
+--      if IsValid(stemp, "i", 0) then
+--        RecipeDB.Id  :=  StringToInteger(sTemp);
+--        if RecipeDB.FindFirst(Recipe_Id) = SysOk then
+--          g_bUpdate := True;
+--          PromptForEntry("Enter Recipe Name", SetupRecipeName, RecipeDB.Name,0);
+--        else
+--          g_bUpdate := False;
+--          PromptForEntry("Enter Recipe Name", SetupRecipeName, Blank,0);
+--        end if;
+--      end if;
 
-    elsif EntryMode = SetupRecipeName then
-      if IsValid(stemp, "s",15) then
-        RecipeDB.Name  :=  sTemp;
-        if g_bUpdate = True then
-          PromptForEntry("Enter Recipe Ingredient ID #1", SetupRecipeIngred1, IntegerToString(RecipeDB.Ingred1, 0),2);
-        else
-          PromptForEntry("Enter Recipe Ingredient ID #1", SetupRecipeIngred1, Blank,2);
-        end if;
-      end if;
 
-    elsif EntryMode = SetupRecipeIngred1 then
-      if IsValid(stemp, "i", 1) then    			
-        IngredDB.Id := StringToInteger(sTemp);
-        if StringToInteger(sTemp) = 0 then
-					RecipeDB.Ingred1 := 0;
-					RecipeDB.Target1 := 0.0;
-          if g_bUpdate = True then
-            PromptForEntry("Enter Recipe Ingredient ID #2", SetupRecipeIngred2, IntegerToString(RecipeDB.Ingred2, 0),2);
-          else
-            PromptForEntry("Enter Recipe Ingredient ID #2", SetupRecipeIngred2, Blank,2);
-          end if;         
-        elsif IngredDB.FindFirst(Ingred_Id) <> SysOk then
-          PromptForEntry("Error Ingredient Not Found", SetupRecipeIngred1, Blank,2);    
-        else
-          RecipeDB.Ingred1  :=  StringToInteger(sTemp);
-          if g_bUpdate = True then
-            PromptForEntry("Enter Ingredient #1 Target", SetupRecipeTarget1, RealToString(RecipeDB.Target1, 0, g_iDecimal1),2);
-          else
-            PromptForEntry("Enter Ingredient #1 Target", SetupRecipeTarget1, Blank,2);
-          end if;
-        end if;
-      end if;
 
-    elsif EntryMode = SetupRecipeTarget1 then
-      if IsValid(stemp, "r", 1 ) then
-        RecipeDB.Target1 := StringToInteger(sTemp);  
-        if g_bUpdate = True then
-          PromptForEntry("Enter Recipe Ingredient ID #2", SetupRecipeIngred2, IntegerToString(RecipeDB.Ingred2, 0),2);
-        else
-          PromptForEntry("Enter Recipe Ingredient ID #2", SetupRecipeIngred2, Blank,2);
-        end if;       
-      end if;   
+--    elsif EntryMode = SetupRecipeName then
+--      if IsValid(stemp, "s",15) then
+--        RecipeDB.Name  :=  sTemp;
+--        if g_bUpdate = True then
+--          PromptForEntry("Enter Recipe Ingredient ID #1", SetupRecipeIngred1, IntegerToString(RecipeDB.Ingred1, 0),2);
+--        else
+--          PromptForEntry("Enter Recipe Ingredient ID #1", SetupRecipeIngred1, Blank,2);
+--        end if;
+--      end if;          
 
-    elsif EntryMode = SetupRecipeIngred2 then
-      if IsValid(stemp, "i", 1) then      
-        IngredDB.Id := StringToInteger(sTemp);
-        if StringToInteger(sTemp) = 0 then
-					RecipeDB.Ingred2 := 0;
-					RecipeDB.Target2 := 0.0;
-          if g_bUpdate = True then
-            PromptForEntry("Enter Recipe Ingredient ID #3", SetupRecipeIngred3, IntegerToString(RecipeDB.Ingred3, 0),2);
-          else
-            PromptForEntry("Enter Recipe Ingredient ID #3", SetupRecipeIngred3, Blank,2);
-          end if;         
-        elsif IngredDB.FindFirst(Ingred_Id) <> SysOk then
-          PromptForEntry("Error Ingredient Not Found", SetupRecipeIngred2, Blank,2);    
-        else
-          RecipeDB.Ingred2  :=  StringToInteger(sTemp);
-          if g_bUpdate = True then
-            PromptForEntry("Enter Ingredient #2 Target", SetupRecipeTarget2, RealToString(RecipeDB.Target2, 0, g_iDecimal1),2);
-          else
-            PromptForEntry("Enter Ingredient #2 Target", SetupRecipeTarget2, Blank,2);
-          end if;
-        end if;
-      end if;
+--    elsif EntryMode = SetupDeleteRecipe then
+--      if IsValid(stemp, "i", 0 ) then
+--        RecipeDB.Id  :=  StringToInteger(sTemp);
+--         if RecipeDB.FindFirst(Recipe_Id) = SysOk then
+--           g_sysResult := RecipeDB.Delete;  
+--           while RecipeDB.FindNext = SysOk       
+--           loop
+--             RecipeDB.Delete;    
+--            end loop;
+--            DisplayStatus("Recipe Deleted");
+--          else
+--            DisplayStatus("Recipe NOT FOUND");
+--          end if;
+--          EntryMode := Setup1Mode;
+--        end if;
 
-    elsif EntryMode = SetupRecipeTarget2 then
-      if IsValid(stemp, "r", 1 ) then
-        RecipeDB.Target2 := StringToInteger(sTemp);  
-        if g_bUpdate = True then
-          PromptForEntry("Enter Recipe Ingredient ID #3", SetupRecipeIngred3, IntegerToString(RecipeDB.Ingred3, 0),2);
-        else
-          PromptForEntry("Enter Recipe Ingredient ID #3", SetupRecipeIngred3, Blank,2);
-        end if;       
-      end if;       
-
-    elsif EntryMode = SetupRecipeIngred3 then
-      if IsValid(stemp, "i", 1) then      
-        IngredDB.Id := StringToInteger(sTemp);
-        if StringToInteger(sTemp) = 0 then
-					RecipeDB.Ingred3 := 0;
-					RecipeDB.Target3 := 0.0;
-          if g_bUpdate = True then
-            PromptForEntry("Enter Recipe Ingredient ID #4", SetupRecipeIngred4, IntegerToString(RecipeDB.Ingred4, 0),2);
-          else
-            PromptForEntry("Enter Recipe Ingredient ID #4", SetupRecipeIngred4, Blank,2);
-          end if;         
-        elsif IngredDB.FindFirst(Ingred_Id) <> SysOk then
-          PromptForEntry("Error Ingredient Not Found", SetupRecipeIngred3, Blank,2);    
-        else
-          RecipeDB.Ingred3  :=  StringToInteger(sTemp);
-          if g_bUpdate = True then
-            PromptForEntry("Enter Ingredient #3 Target", SetupRecipeTarget3, RealToString(RecipeDB.Target3, 0, g_iDecimal1),2);
-          else
-            PromptForEntry("Enter Ingredient #3 Target", SetupRecipeTarget3, Blank,2);
-          end if;
-        end if;
-      end if;
-
-    elsif EntryMode = SetupRecipeTarget3 then
-      if IsValid(stemp, "r", 1 ) then
-        RecipeDB.Target3 := StringToInteger(sTemp);  
-        if g_bUpdate = True then
-          PromptForEntry("Enter Recipe Ingredient ID #4", SetupRecipeIngred4, IntegerToString(RecipeDB.Ingred4, 0),2);
-        else
-          PromptForEntry("Enter Recipe Ingredient ID #4", SetupRecipeIngred4, Blank,2);
-        end if;       
-      end if;     
-
-    elsif EntryMode = SetupRecipeIngred4 then
-      if IsValid(stemp, "i", 1) then      
-        IngredDB.Id := StringToInteger(sTemp);
-        if StringToInteger(sTemp) = 0 then
-					RecipeDB.Ingred4 := 0;
-          RecipeDB.Target4 := 0.0;  
-          if g_bUpdate = True then
-            if RecipeDB.Update = SysOk then
-              DisplayStatus("Recipe Updated");
-            else 
-              DisplayStatus("Error: Recipe DB");
-            end if;
-          else
-            if RecipeDB.Add = SysOk then
-              DisplayStatus("Recipe Added");
-            else 
-              DisplayStatus("Error: Recipe DB");
-            end if;
-          end if; 
-          EntryMode := Setup1Mode;          
-        elsif IngredDB.FindFirst(Ingred_Id) <> SysOk then
-          PromptForEntry("Error Ingredient Not Found", SetupRecipeIngred4, Blank,2);    
-        else
-          RecipeDB.Ingred4  :=  StringToInteger(sTemp);
-          if g_bUpdate = True then
-            PromptForEntry("Enter Ingredient #4 Target", SetupRecipeTarget4, RealToString(RecipeDB.Target4, 0, g_iDecimal1),2);
-          else
-            PromptForEntry("Enter Ingredient #4 Target", SetupRecipeTarget4, Blank,2);
-          end if;
-        end if;
-      end if;
-
-    elsif EntryMode = SetupRecipeTarget4 then
-      if IsValid(stemp, "r", 1 ) then
-        RecipeDB.Target4 := StringToInteger(sTemp);  
-        if g_bUpdate = True then
-          if RecipeDB.Update = SysOk then
-            DisplayStatus("Recipe Updated");
-          else 
-            DisplayStatus("Error: Recipe DB");
-          end if;
-        else
-          if RecipeDB.Add = SysOk then
-            DisplayStatus("Recipe Added");
-          else 
-            DisplayStatus("Error: Recipe DB");
-          end if;
-        end if; 
-        EntryMode := Setup1Mode;    
-      end if;             
-
-      elsif EntryMode = SetupDeleteRecipe then
-        if IsValid(stemp, "i", 0 ) then
-          RecipeDB.Id  :=  StringToInteger(sTemp);
-          if RecipeDB.FindFirst(Recipe_Id) = SysOk then
-            g_sysResult := RecipeDB.Delete;  
-            while RecipeDB.FindNext = SysOk       
-            loop
-              RecipeDB.Delete;    
-             end loop;
-             DisplayStatus("Recipe Deleted");
-          else
-            DisplayStatus("Recipe NOT FOUND");
-          end if;
-          EntryMode := Setup1Mode;
-        end if;
-
-    elsif EntryMode = EnterRecipeID then
+--    elsif EntryMode = EnterRecipeID then
       
-      RecipeDB.Id := StringToInteger(sTemp);
-      if RecipeDB.FindFirst(Recipe_Id) = SysOk then
-        g_iRecipeId := RecipeDB.Id;  
-        PopulateRecipeArray; 
-        g_iCurrentIngredient := 1;               
-        EntryMode := NoMode;
-      else
-        PromptForEntry("Recipe NOT Found - Retry", EnterRecipeID, Blank,2); 
-      end if;
+--      RecipeDB.Id := StringToInteger(sTemp);
+--      if RecipeDB.FindFirst(Recipe_Id) = SysOk then
+--        g_iRecipeId := RecipeDB.Id;   
+--        g_iCurrentIngredient := 1;               
+--        EntryMode := NoMode;
+--      else
+--        PromptForEntry("Recipe NOT Found - Retry", EnterRecipeID, Blank,2); 
+--      end if;
    
     end if; 
   end;
@@ -797,26 +585,26 @@ program Recipe;
     BatchMode := Complete;  
     SelectScreen(g_ciMain); 
     EntryMode := NoMode;
-  
-  end;    
-
-  procedure StartProcess;  -- Start Process
-  begin
-
-    RecipeDB.Id := g_iRecipeId;   
-    if RecipeDB.FindFirst(Recipe_Id) = SysOk then   
-      DisplayStatus(Blank);    
-      PopulateRecipeArray; 
-      g_iCurrentIngredient := 1;
-      Paused := No;
-      EntryMode := NoMode;  
-      BatchMode := WaitSSTare;  
-      LockMajorKeys;  
-      Setwidgetvisibility(setup, Voff);     
-      SetupStartTimer(1, 10, TimerContinuous);    
-    end if;
+    CheckForScale2;
 
   end;    
+
+  --procedure StartProcess;  -- Start Process
+  --begin
+
+  --  RecipeDB.Id := g_iRecipeId;   
+  --  if RecipeDB.FindFirst(Recipe_Id) = SysOk then   
+  --    DisplayStatus(Blank);    
+  --    g_iCurrentIngredient := 1;
+  --    Paused := No;
+  --    EntryMode := NoMode;  
+  --    BatchMode := WaitSSTare;  
+  --    LockMajorKeys;  
+  --    Setwidgetvisibility(setup, Voff);     
+  --    SetupStartTimer(1, 10, TimerContinuous);    
+  --  end if;
+
+  --end;    
 
   procedure StopProcess;  -- Stop Process after its been started 
   begin                        
@@ -922,10 +710,10 @@ program Recipe;
         EnableSP(1);
       elsif g_arRecipe[g_iCurrentIngredient].iIngredientId = 2 then
         EnableSP(2); 
-      elsif g_arRecipe[g_iCurrentIngredient].iIngredientId = 3 then
-        EnableSP(3); 
-      elsif g_arRecipe[g_iCurrentIngredient].iIngredientId = 4 then
-        EnableSP(4); 
+      --elsif g_arRecipe[g_iCurrentIngredient].iIngredientId = 3 then
+        --EnableSP(3); 
+      --elsif g_arRecipe[g_iCurrentIngredient].iIngredientId = 4 then
+        --EnableSP(4); 
       end if; 
       --SetLabelText(lbSts1, "Filling " + g_arRecipe[g_iCurrentIngredient].sIngredientName + " to " + RealToString(g_arRecipe[g_iCurrentIngredient].rTargetWgt,0,g_iDecimal1) + " " + GetCurrentUnitsString(1)); 
       StopTimer(1);
@@ -1009,23 +797,23 @@ program Recipe;
     
   end;
 
-  handler SP3Trip; -- Ingredient #3 Setpoint
-  begin  
+  --handler SP3Trip; -- Ingredient #3 Setpoint
+  --begin  
       
-    DisableSP(3);
-    BatchMode := WaitSSFull;
-    RestartProcess; 
+    --DisableSP(3);
+    --BatchMode := WaitSSFull;
+    --RestartProcess; 
     
-  end;
+  --end;
 
-  handler SP4Trip; -- Ingredient #4 Setpoint
-  begin  
+  --handler SP4Trip; -- Ingredient #4 Setpoint
+  --begin  
 
-    DisableSP(4);
-    BatchMode := WaitSSFull;
-    RestartProcess; 
+    --DisableSP(4);
+    --BatchMode := WaitSSFull;
+    --RestartProcess; 
     
-  end;  
+  --end;  
    
 
   handler UserEntry;  -- Processing a data entry method
@@ -1066,8 +854,6 @@ program Recipe;
 
     if g_iWidget = btnSetP then
 			PromptForEntry("Enter New Password", SetupChangePasswordMode, Blank,0); 
-    --elsif g_iWidget = lbSet2 or g_iWidget = lbSet22 then
-      --PromptForEntry("Enter Empty Weight", SetupScaleEmptyWeightMode, RealToString(g_rScaleEmptyWeight, 0, g_iDecimal1),2); 
     --elsif g_iWidget = lbSet3 or g_iwidget = lbSet33 then
       --PromptForEntry("Enter Discharge Time (sec) ", SetupScaleDischargeTimeMode, RealToString(g_rScaleDischargeTime, 0, 1),2);     
     --elsif g_iWidget = lbSet4 then 
@@ -1110,6 +896,8 @@ program Recipe;
      -- KeyPress(KeyedTareKey);
     --elsif g_iWidget = lbAuxP then
      -- KeyPress(AuxPrintKey); 
+
+    
 
     elsif g_iWidget = lbl8 or g_iWidget = lbl10 or g_iWidget = lbl22
       or g_iWidget = lbl24 then 
