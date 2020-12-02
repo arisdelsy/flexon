@@ -18,42 +18,19 @@ DIO0_8    : constant integer := 8;
 -- Analog Output Aliases
 
 -- Database Type Definitions and Field Aliases
-type IngredDatabase is database ("Ingred")
-        Id: Integer;
-      Name: String;
-    Preact: Real;
+type S1Database is database ("DB1")
+   Reset: Real;
+   Target: Real;
 end database;
-type RecipeDatabase is database ("Recipe")
-        Id: Integer;
-      Name: String;
-   --Ingred1: Integer;
-   Reset1: Real;
-   Target1: Real;
-   --Ingred2: Integer;
-   Reset2: Real;
-   Target2: Real;
-   --Ingred3: Integer;
-   Reset3: Real;
-   Target3: Real;
-   --Ingred4: Integer;
-   Reset4: Real;
-   Target4: Real;
+type S2Database is database ("DB2")
+   Reset: Real;
+   Target: Real;
 end database;
-
-Ingred_Id       : constant integer := 1;
-Ingred_Name     : constant integer := 2;
-Ingred_Preact   : constant integer := 3;
 
 Recipe_Id       : constant integer := 1;
 Recipe_Name     : constant integer := 2;
-Recipe_Ingred1  : constant integer := 3;
-Recipe_Target1  : constant integer := 4;
-Recipe_Ingred2  : constant integer := 5;
-Recipe_Target2  : constant integer := 6;
-Recipe_Ingred3  : constant integer := 7;
-Recipe_Target3  : constant integer := 8;
-Recipe_Ingred4  : constant integer := 9;
-Recipe_Target4  : constant integer := 10;
+Recipe_Reset  : constant integer := 3;
+Recipe_Target  : constant integer := 4;
 
 
 
