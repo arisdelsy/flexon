@@ -96,7 +96,8 @@ program Recipe;
   g_iTotalNbrIngredients : integer;    
   g_iCurrentIngredient : integer;    
   g_iDelayCnt : integer; 
-  g_iWidget : integer;    
+  g_iWidget : integer;
+  g_rCapacity : real;    
 
   type RecipeRecord is
     record 
@@ -237,16 +238,7 @@ program Recipe;
     Setwidgetvisibility(lblTot2, Voff);
   end;
 
-  procedure CheckForScale2; --Checks for scale 2 and enables the widgets
-  begin
 
-    if AcquireTare(Scale2) <> SysOk then
-      TurnOffScale2Widgets;
-    else
-      TurnOnScale2Widgets;
-    end if;
-  
-  end;
 
   procedure UnLockMajorKeys;  -- UnLocks ZERO, GROSS/NET, TARE, UNITS and PRINT key
   begin
@@ -572,20 +564,32 @@ program Recipe;
     end if; 
   end;
 
-  procedure Ready;  -- Initialization procedure
+  procedure HowmanyScales;--Checks if Scale 2 is there and Turns on widgets
   begin
- 
-    UnLockMajorKeys;  
+
     if GetUnits(1, g_uUnits) = SysOk then
       if GetCountBy(1, g_uUnits, g_rCountby) = SysOk then
         g_iDecimal1 := CalcDecimal(g_rCountby); 
       end if;
-    end if;              
+    end if;   
+
+    if GetCapacity(2, g_uUnits, g_rCapacity) <> SysOk then
+      TurnOffScale2Widgets;
+    else
+      TurnOnScale2Widgets;
+    end if;
+
+  end;
+
+  procedure Ready;  -- Initialization procedure
+  begin
+ 
+    UnLockMajorKeys;  
+    HowmanyScales;             
     Paused := No;
     BatchMode := Complete;  
     SelectScreen(g_ciMain); 
     EntryMode := NoMode;
-    CheckForScale2;
 
   end;    
 
