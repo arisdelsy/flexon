@@ -22,10 +22,7 @@ type S1Database is database ("DB1")
    Reset: Real;
    Target: Real;
 end database;
-type S2Database is database ("DB2")
-   Reset: Real;
-   Target: Real;
-end database;
+
 
 Recipe_Id       : constant integer := 1;
 Recipe_Name     : constant integer := 2;
