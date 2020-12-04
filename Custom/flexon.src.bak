@@ -36,7 +36,8 @@ program Recipe;
 
   -- Screens
   g_ciMain    : constant integer := 1;
-  g_ciSetup   : constant integer := 2;    
+  g_ciSetup   : constant integer := 2;
+  g_ciDefault : constant integer := 4;  
   
   -- Operation Modes
   LockMode                : constant integer := 0;
@@ -209,36 +210,6 @@ program Recipe;
     LockKey(PrintKey);
     
   end; 
-
-  procedure TurnOnScale2Widgets; --Turning on the Scale 2 Widgets
-  begin
-
-    Setwidgetvisibility(Scale2, Von);
-    Setwidgetvisibility(barR2, Von);
-    Setwidgetvisibility(barT2, Von);
-    Setwidgetvisibility(lbl22, Von);
-    Setwidgetvisibility(lblTar2, Von);
-    Setwidgetvisibility(lbl24, Von);
-    Setwidgetvisibility(lblRes2, Von);
-    Setwidgetvisibility(lbl29, Von);
-    Setwidgetvisibility(lblTot2, Von);
-  end;
-
-  procedure TurnOffScale2Widgets; --Turning on the Scale 2 Widgets
-  begin
-
-    Setwidgetvisibility(Scale2, Voff);
-    Setwidgetvisibility(barR2, Voff);
-    Setwidgetvisibility(barT2, Voff);
-    Setwidgetvisibility(lbl22, Voff);
-    Setwidgetvisibility(lblTar2, Voff);
-    Setwidgetvisibility(lbl24, Voff);
-    Setwidgetvisibility(lblRes2, Voff);
-    Setwidgetvisibility(lbl29, Voff);
-    Setwidgetvisibility(lblTot2, Voff);
-  end;
-
-
 
   procedure UnLockMajorKeys;  -- UnLocks ZERO, GROSS/NET, TARE, UNITS and PRINT key
   begin
@@ -574,9 +545,9 @@ program Recipe;
     end if;   
 
     if GetCapacity(2, g_uUnits, g_rCapacity) <> SysOk then
-      TurnOffScale2Widgets;
+      SelectScreen(g_ciDefault);
     else
-      TurnOnScale2Widgets;
+      SelectScreen(g_ciMain);
     end if;
 
   end;
@@ -588,7 +559,7 @@ program Recipe;
     HowmanyScales;             
     Paused := No;
     BatchMode := Complete;  
-    SelectScreen(g_ciMain); 
+    --SelectScreen(g_ciMain); 
     EntryMode := NoMode;
 
   end;    
