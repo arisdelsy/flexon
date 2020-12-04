@@ -19,6 +19,7 @@ DIO0_8    : constant integer := 8;
 
 -- Database Type Definitions and Field Aliases
 type S1Database is database ("DB1")
+   Id: Integer;
    Reset: Real;
    Target: Real;
 end database;
