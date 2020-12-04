@@ -1305,7 +1305,7 @@ program CheckWeighing;
       TurnOffWidgets;
       return;
     end if;			
-    
+    --------------------------------------------------------------------------------------------------------
     -- Validate InRage
     if iInRange = 0 then  
       SetLabelText(lbSts1, "Scale NOT In Range");  
