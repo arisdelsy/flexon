@@ -577,22 +577,22 @@ program Recipe;
 
   end;    
 
-  --procedure StartProcess;  -- Start Process
-  --begin
+  procedure StartProcess;  -- Start Process
+  begin
 
-  --  RecipeDB.Id := g_iRecipeId;   
-  --  if RecipeDB.FindFirst(Recipe_Id) = SysOk then   
-  --    DisplayStatus(Blank);    
-  --    g_iCurrentIngredient := 1;
-  --    Paused := No;
-  --    EntryMode := NoMode;  
-  --    BatchMode := WaitSSTare;  
-  --    LockMajorKeys;  
+    DB1.Id := g_iRecipeId;   
+    if DB1.FindFirst(Recipe_Id) = SysOk then   
+      DisplayStatus(Blank);    
+      g_iCurrentIngredient := 1;
+      Paused := No;
+      EntryMode := NoMode;  
+      BatchMode := WaitSSTare;  
+      LockMajorKeys;  
   --    Setwidgetvisibility(setup, Voff);     
-  --    SetupStartTimer(1, 10, TimerContinuous);    
-  --  end if;
+      SetupStartTimer(1, 10, TimerContinuous);    
+    end if;
 
-  --end;    
+  end;    
 
   procedure StopProcess;  -- Stop Process after its been started 
   begin                        
@@ -766,115 +766,7 @@ program Recipe;
     end if;        
     
   end; 
-
-  handler Timer25Trip;  -- Wait for Standstill check
-  iMotion : integer;   
-  rNetWgt : real;
-	iInRange : integer;
-  rTareWgt : real;
-  begin 
-
-    -- Make sure Item selected
-    if g_sItemId = Blank then  
-      return;
-    end if;		 
-
-    InMotion(CurrentScale, iMotion);
-    GetUnits(CurrentScale, g_uUnits);
-    g_sysResult1 := GetNet(CurrentScale, g_uUnits, rNetWgt); 
-    g_sysResult2 := InRange(CurrentScale, iInRange);   
-    GetTare(CurrentScale, g_uUnits, g_rTareWgt);
-
-    -- Get Net Command
-    if g_sysResult1 <> SysOk then
-      SetLabelText(lbSts1, "Scale Error: " + SysCodeToString(g_sysResult1)); 
-      TurnOffAllOutputs;
-      TurnOffWidgets; 
-      return;
-    end if;
-    
-    -- Check In Range
-    if g_sysResult2 <> SysOk then
-      SetLabelText(lbSts1, "Scale Error: " + SysCodeToString(g_sysResult2));  
-      TurnOffAllOutputs;
-      TurnOffWidgets;
-      return;
-    end if;			
-    
-    -- Validate InRage
-    if iInRange = 0 then  
-      SetLabelText(lbSts1, "Scale NOT In Range");  
-      TurnOffAllOutputs;
-      TurnOffWidgets;
-      return;
-    end if;  
-
-    if EntryMode = NoMode then  
-      return;
-    end if;
-    
-    if rNetWgt < g_rLowWeight then                       
-      SetLabelText(lbAOU, "UNDER");
-      SetWidgetColor(lbAOU, "Orange"); 
-      SetDigout(0, g_coAccept, g_ciDigOutOff);
-      SetDigout(0, g_coOver, g_ciDigOutOff);
-      SetDigout(0, g_coUnder, g_ciDigOutOn);
-      setwidgetColor(1, "Orange");
-    elsif rNetWgt > g_rHighWeight then 
-      SetLabelText(lbAOU, "OVER");
-      SetWidgetColor(lbAOU, "Red"); 
-      SetDigout(0, g_coAccept, g_ciDigOutOff);
-      SetDigout(0, g_coUnder, g_ciDigOutOff);      
-      SetDigout(0, g_coOver, g_ciDigOutOn);
-      setwidgetColor(1, "Red");	
-    else
-      SetLabelText(lbAOU, "ACCEPTED");
-      SetWidgetColor(lbAOU, "Green");
-      setwidgetColor(1, "Green"); 	
-      SetDigout(0, g_coUnder, g_ciDigOutOff);
-      SetDigout(0, g_coOver, g_ciDigOutOff);      
-      SetDigout(0, g_coAccept, g_ciDigOutOn);
-    end if;
-
-    if iMotion = 0 and EntryMode = ProductOnScale then    
-      DisplayStatus(Blank);  
-      SetLabelText(lbSts1,  Blank);  
-                        
-      if rNetWgt < g_rLowWeight then                       
-        SetLabelText(lbAOU, "UNDER");
-				SetWidgetColor(lbAOU, "Orange"); 
-				SetDigout(0, g_coUnder, g_ciDigOutOn);
-				TransDB.Status := "U";
-        setwidgetColor(1, "Orange");
-        g_rLastSavedWgt := rNetWgt;
-      elsif rNetWgt > g_rHighWeight then
-        SetLabelText(lbAOU, "OVER");
-				SetWidgetColor(lbAOU, "Red"); 
-				SetDigout(0, g_coOver, g_ciDigOutOn);
-				TransDB.Status := "O";	
-        setwidgetColor(1, "Red");	
-        g_rLastSavedWgt := rNetWgt;
-      else
-        SetLabelText(lbAOU, "ACCEPTED");
-				SetWidgetColor(lbAOU, "Green");
-        setwidgetColor(1, "Green"); 	
-				SetDigout(0, g_coAccept, g_ciDigOutOn);
-				TransDB.Status := "A";	
-        g_rLastSavedWgt := rNetWgt;
-      end if; 
-
-      SetLabelText(lbSts1, "Last Stable Weight - " + Realtostring(g_rLastSavedWgt,0,g_iDecimal1));
-
-      if g_bPrintPressed = True then
-        StopTimer(25);
-        StoreorSendTransaction(g_rLastSavedWgt);
-        PrintTicket;
-      end if;
-
-
-		end if; 
  
-  end;   
   
   handler SP1Trip; -- Ingredient #1 Setpoint
   begin 
