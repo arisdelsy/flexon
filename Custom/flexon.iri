@@ -76,6 +76,14 @@ lbl27     : constant integer := 27;
 lblTot1   : constant integer := 28;
 lbl29     : constant integer := 29;
 lblTot2   : constant integer := 30;
+bar32     : constant integer := 32;
+bar33     : constant integer := 33;
+barT11    : constant integer := 34;
+barR11    : constant integer := 35;
+lbl36     : constant integer := 36;
+lbl37     : constant integer := 37;
+lblT11    : constant integer := 38;
+lblR11    : constant integer := 39;
 
 USBPRN    : constant string := "USBPRN";
 ADVPRN    : constant string := "ADVPRN";
