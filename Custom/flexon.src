@@ -568,7 +568,8 @@ program Recipe;
   procedure Ready;  -- Initialization procedure
   begin
  
-    UnLockMajorKeys;  
+    UnLockMajorKeys; 
+
     HowmanyScales;             
     Paused := No;
     BatchMode := Complete;  
@@ -685,7 +686,15 @@ program Recipe;
 				
         if SetTare(1 , g_uUnits, rScaleWgt) = SysOk then
           SetMode(1 , NetMode);          
-          BatchMode := Filling;  
+          BatchMode := Filling;
+          if GetCapacity(2, g_uUnits, g_rCapacity) <> SysOk then
+            SetWidgetColor(31, "Red");
+          else
+            SetWidgetColor(1, "Red");
+            SetWidgetColor(2, "Red");
+
+          end if; 
+
         --else
           --SetLabelText(lbSts1, "Trying to Tare Scale");
         end if;
@@ -721,11 +730,22 @@ program Recipe;
             SetDigout(0, g_coDischarge, g_ciDigOutOff); 
             StopTimer(1);                                        
             BatchMode := Complete;         
-            --SetLabelText(lbSts1, "Batch Complete");  
+            --SetLabelText(lbSts1, "Batch Complete"); 
+
+          if SetTare(1 , g_uUnits, rScaleWgt) = SysOk then
+            SetMode(1 , NetMode);          
+            BatchMode := Filling;
+            if GetCapacity(2, g_uUnits, g_rCapacity) <> SysOk then
+              SetWidgetColor(31, "Green");
+            else
+              SetWidgetColor(1, "Green");
+              SetWidgetColor(2, "Green");
+            end if;            
+
             PrintTicket;  
             Paused := No;      
             UnLockMajorKeys; 
-          end if;                    
+            end if;                    
         else   
           g_iCurrentIngredient := g_iCurrentIngredient + 1; 
           BatchMode := WaitSSTare;       
