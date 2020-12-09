@@ -1,0 +1,7 @@
+C:\Users\Steve\Documents\GitHub\flexon\Custom\flexon.src:544:20:: Undefined identifier
+C:\Users\Steve\Documents\GitHub\flexon\Custom\flexon.src:545:20:: Undefined identifier
+C:\Users\Steve\Documents\GitHub\flexon\Custom\flexon.src:546:22:: Undefined identifier
+C:\Users\Steve\Documents\GitHub\flexon\Custom\flexon.src:547:22:: Undefined identifier
+C:\Users\Steve\Documents\GitHub\flexon\Custom\flexon.src:584:5:: Undefined identifier
+C:\Users\Steve\Documents\GitHub\flexon\Custom\flexon.src:585:8:: Undefined identifier
+C:\Users\Steve\Documents\GitHub\flexon\Custom\flexon.src:749:13:: syntax error
