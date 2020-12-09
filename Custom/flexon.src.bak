@@ -50,11 +50,14 @@ program Recipe;
     SetupChangePasswordMode  : constant integer := 1100;
     SetupVerifyPasswordMode  : constant integer := 1101;
     --SetupRecipeId             : constant integer := 1210;
+      SetupId : constant integer := 1210;
+      SetupTarget : constant integer := 1211;
+      SetupReset : constant integer := 1212;
       --SetupRecipeName           : constant integer := 1211;
-      SetupRecipeIngred1        : constant integer := 1212;
-      SetupRecipeTarget1        : constant integer := 1213;
-      SetupRecipeIngred2        : constant integer := 1214;
-      SetupRecipeTarget2        : constant integer := 1215;            
+      --SetupRecipeIngred1        : constant integer := 1212;
+      --SetupRecipeTarget1        : constant integer := 1213;
+      --SetupRecipeIngred2        : constant integer := 1214;
+      --SetupRecipeTarget2        : constant integer := 1215;            
     SetupDeleteRecipe         : constant integer := 1220;
     --SetupIngredId             : constant integer := 1230;
       --SetupIngredName           : constant integer := 1231;
@@ -535,6 +538,16 @@ program Recipe;
     end if; 
   end;
 
+  procedure InitializeDefault;
+  begin
+
+    SetWidgetColor(barNet, "#8D0018");
+    SetWidgetColor(barPrint, "#8D0018");    
+    SetBargraphLevel(barNet, 100);
+    SetBargraphLevel(barPrint, 100);
+
+  end;
+
   procedure HowmanyScales;--Checks if Scale 2 is there and Turns on widgets
   begin
 
@@ -555,7 +568,8 @@ program Recipe;
   procedure Ready;  -- Initialization procedure
   begin
  
-    UnLockMajorKeys;  
+    UnLockMajorKeys; 
+
     HowmanyScales;             
     Paused := No;
     BatchMode := Complete;  
@@ -564,22 +578,22 @@ program Recipe;
 
   end;    
 
-  --procedure StartProcess;  -- Start Process
-  --begin
+  procedure StartProcess;  -- Start Process
+  begin
 
-  --  RecipeDB.Id := g_iRecipeId;   
-  --  if RecipeDB.FindFirst(Recipe_Id) = SysOk then   
-  --    DisplayStatus(Blank);    
-  --    g_iCurrentIngredient := 1;
-  --    Paused := No;
-  --    EntryMode := NoMode;  
-  --    BatchMode := WaitSSTare;  
-  --    LockMajorKeys;  
+    DB1.Id := g_iRecipeId;   
+    if DB1.FindFirst(Recipe_Id) = SysOk then   
+      DisplayStatus(Blank);    
+      g_iCurrentIngredient := 1;
+      Paused := No;
+      EntryMode := NoMode;  
+      BatchMode := WaitSSTare;  
+      LockMajorKeys;  
   --    Setwidgetvisibility(setup, Voff);     
-  --    SetupStartTimer(1, 10, TimerContinuous);    
-  --  end if;
+      SetupStartTimer(1, 10, TimerContinuous);    
+    end if;
 
-  --end;    
+  end;    
 
   procedure StopProcess;  -- Stop Process after its been started 
   begin                        
@@ -672,7 +686,15 @@ program Recipe;
 				
         if SetTare(1 , g_uUnits, rScaleWgt) = SysOk then
           SetMode(1 , NetMode);          
-          BatchMode := Filling;  
+          BatchMode := Filling;
+          if GetCapacity(2, g_uUnits, g_rCapacity) <> SysOk then
+            SetWidgetColor(31, "Red");
+          else
+            SetWidgetColor(1, "Red");
+            SetWidgetColor(2, "Red");
+
+          end if; 
+
         --else
           --SetLabelText(lbSts1, "Trying to Tare Scale");
         end if;
@@ -708,11 +730,22 @@ program Recipe;
             SetDigout(0, g_coDischarge, g_ciDigOutOff); 
             StopTimer(1);                                        
             BatchMode := Complete;         
-            --SetLabelText(lbSts1, "Batch Complete");  
+            --SetLabelText(lbSts1, "Batch Complete"); 
+
+          if SetTare(1 , g_uUnits, rScaleWgt) = SysOk then
+            SetMode(1 , NetMode);          
+            BatchMode := Filling;
+            if GetCapacity(2, g_uUnits, g_rCapacity) <> SysOk then
+              SetWidgetColor(31, "Green");
+            else
+              SetWidgetColor(1, "Green");
+              SetWidgetColor(2, "Green");
+            end if;            
+
             PrintTicket;  
             Paused := No;      
             UnLockMajorKeys; 
-          end if;                    
+            end if;                    
         else   
           g_iCurrentIngredient := g_iCurrentIngredient + 1; 
           BatchMode := WaitSSTare;       
@@ -752,7 +785,8 @@ program Recipe;
 
     end if;        
     
-  end;  
+  end; 
+ 
   
   handler SP1Trip; -- Ingredient #1 Setpoint
   begin 
