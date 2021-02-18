@@ -107,7 +107,7 @@ program Recipe;
       rTargetWgt : real;    
       rPreactWgt : real;
       rActualWgt : real;
-      rResetWgt  : real;      
+      --rResetWgt  : real;      
     end record;   
 
   type RecipeArrays is array [4] of RecipeRecord;
@@ -131,8 +131,8 @@ program Recipe;
     
     DisableSP(1);
     DisableSP(2);
-    DisableSP(3);
-    DisableSP(4);
+    --DisableSP(3);
+    --DisableSP(4);
     
   end;
 
@@ -488,7 +488,8 @@ program Recipe;
       g_arRecipe[i].sIngredientName := Blank;
       g_arRecipe[i].rTargetWgt := 0.0;    
       g_arRecipe[i].rPreactWgt := 0.0;
-      g_arRecipe[i].rActualWgt := 0.0;            
+      g_arRecipe[i].rActualWgt := 0.0;
+      --g_arRecipe[i].rResetWgt  := 0.0;            
     end loop;
          
   end;     
@@ -508,7 +509,8 @@ program Recipe;
         g_arRecipe[i].iIngredientId := IngredDB.Id; 
         g_arRecipe[i].sIngredientName := IngredDB.Name;
         g_arRecipe[i].rTargetWgt := RecipeDB.Target1;    
-        g_arRecipe[i].rPreactWgt := IngredDB.Preact; 
+        g_arRecipe[i].rPreactWgt := IngredDB.Preact;
+        --g_arRecipe[i].rResetWgt  := IngredDB.Reset1; 
         SetSPValue(RecipeDB.Ingred1, g_arRecipe[i].rTargetWgt - g_arRecipe[i].rPreactWgt);              
       end if; 
     end if; 
@@ -696,11 +698,11 @@ program Recipe;
     elsif EntryMode = SetupRecipeTarget2 then
       if IsValid(stemp, "r", 1 ) then
         RecipeDB.Target2 := StringToInteger(sTemp);  
-        if g_bUpdate = True then
-          PromptForEntry("Enter Recipe Ingredient ID #3", SetupRecipeIngred3, IntegerToString(RecipeDB.Ingred3, 0),2);
-        else
-          PromptForEntry("Enter Recipe Ingredient ID #3", SetupRecipeIngred3, Blank,2);
-        end if;       
+        --if g_bUpdate = True then
+          --PromptForEntry("Enter Recipe Ingredient ID #3", SetupRecipeIngred3, IntegerToString(RecipeDB.Ingred3, 0),2);
+        --else
+          --PromptForEntry("Enter Recipe Ingredient ID #3", SetupRecipeIngred3, Blank,2);
+        --end if;       
       end if;       
 
     --elsif EntryMode = SetupRecipeIngred3 then
@@ -996,6 +998,50 @@ program Recipe;
     StartTimer(1);             
 
   end;    
+
+  procedure StartButton;
+    rGrossWgt1 : real;
+    rGrossWgt2 : real;  
+  begin
+    if EntryMode = NoMode and Paused = No and BatchMode = Complete then  
+      if g_iRecipeId = 0 then
+        SetLabelText(lbSts1, "Please Select Recipe");
+        return;
+      end if;    
+      
+      GetGross(1, g_uUnits, rGrossWgt1);
+      if rGrossWgt1 >= g_rScaleEmptyWeight then
+        SetLabelText(lbSts1, "Scale NOT Empty"); 
+        ClearStatus(100);
+        return;
+      end if; 
+      
+      -- Get status of Emergency Mushroom switch
+      --GetDigin(0, g_ciEStop, iDigInSts);  
+  
+      --if iDigInsts = 0 then 
+        StartProcess;
+      --else
+        --SetLabelText(lbSts1, "Check E-Stop");   
+        --ClearStatus(100);
+      --end if;      
+        
+    --elsif EntryMode = NoMode and Paused = Yes and BatchMode <> Complete then    
+      -- Get status of Emergency Mushroom switch
+      --GetDigin(0, g_ciEStop, iDigInSts);  
+            
+      --if iDigInsts = 1 then 
+        --AbortProcess;
+      --elsif iDigInsts = 0 then
+        --RestartProcess;
+      --else
+        --DisplayStatus("Error: Invalid Operation");
+        --ClearStatus(100);
+      --end if;   
+
+    end if;   
+
+  end;
 
   handler DigInS0B1Activate;  -- Start / Run / Abort Switch 
     iDigInSts : integer; 
