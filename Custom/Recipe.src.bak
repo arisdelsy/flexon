@@ -57,7 +57,8 @@ program Recipe;
     SetupDeleteRecipe         : constant integer := 1220;
     SetupIngredId             : constant integer := 1230;
       SetupIngredName           : constant integer := 1231;
-      SetupIngredPreact         : constant integer := 1232;
+      --Used to be SetupIngredPreact
+      SetupIngredReset         : constant integer := 1232;
     SetupDeleteIngred         : constant integer := 1240; 
     SetupScaleEmptyWeightMode  : constant integer := 1300;
     SetupScaleDischargeTimeMode : constant integer := 1301; 
@@ -105,9 +106,9 @@ program Recipe;
       iIngredientId : integer;
       sIngredientName : string;  
       rTargetWgt : real;    
-      rPreactWgt : real;
+      --rPreactWgt : real;
       rActualWgt : real;
-      --rResetWgt  : real;      
+      rResetWgt  : real;      
     end record;   
 
   type RecipeArrays is array [4] of RecipeRecord;
@@ -487,9 +488,9 @@ program Recipe;
       g_arRecipe[i].iIngredientId := 0; 
       g_arRecipe[i].sIngredientName := Blank;
       g_arRecipe[i].rTargetWgt := 0.0;    
-      g_arRecipe[i].rPreactWgt := 0.0;
+      --g_arRecipe[i].rPreactWgt := 0.0;
       g_arRecipe[i].rActualWgt := 0.0;
-      --g_arRecipe[i].rResetWgt  := 0.0;            
+      g_arRecipe[i].rResetWgt  := 0.0;            
     end loop;
          
   end;     
@@ -509,9 +510,9 @@ program Recipe;
         g_arRecipe[i].iIngredientId := IngredDB.Id; 
         g_arRecipe[i].sIngredientName := IngredDB.Name;
         g_arRecipe[i].rTargetWgt := RecipeDB.Target1;    
-        g_arRecipe[i].rPreactWgt := IngredDB.Preact;
-        --g_arRecipe[i].rResetWgt  := IngredDB.Reset1; 
-        SetSPValue(RecipeDB.Ingred1, g_arRecipe[i].rTargetWgt - g_arRecipe[i].rPreactWgt);              
+        --g_arRecipe[i].rPreactWgt := IngredDB.Preact;
+        g_arRecipe[i].rResetWgt  := IngredDB.Reset; 
+        SetSPValue(RecipeDB.Ingred1, g_arRecipe[i].rTargetWgt - g_arRecipe[i].rResetWgt);              
       end if; 
     end if; 
 
@@ -524,8 +525,9 @@ program Recipe;
         g_arRecipe[i].iIngredientId := IngredDB.Id; 
         g_arRecipe[i].sIngredientName := IngredDB.Name;
         g_arRecipe[i].rTargetWgt := RecipeDB.Target2;    
-        g_arRecipe[i].rPreactWgt := IngredDB.Preact;  
-        SetSPValue(RecipeDB.Ingred2, g_arRecipe[i].rTargetWgt - g_arRecipe[i].rPreactWgt);             
+        --g_arRecipe[i].rPreactWgt := IngredDB.Preact;
+        g_arRecipe[i].rResetWgt  := IngredDB.Reset;
+        SetSPValue(RecipeDB.Ingred2, g_arRecipe[i].rTargetWgt - g_arRecipe[i].rResetWgt);             
       end if; 
     end if;
 
@@ -697,14 +699,19 @@ program Recipe;
 
     elsif EntryMode = SetupRecipeTarget2 then
       if IsValid(stemp, "r", 1 ) then
-        RecipeDB.Target2 := StringToInteger(sTemp);  
+        RecipeDB.Target2 := StringToInteger(sTemp);
         --if g_bUpdate = True then
           --PromptForEntry("Enter Recipe Ingredient ID #3", SetupRecipeIngred3, IntegerToString(RecipeDB.Ingred3, 0),2);
         --else
           --PromptForEntry("Enter Recipe Ingredient ID #3", SetupRecipeIngred3, Blank,2);
         --end if;       
       end if;       
-
+      if RecipeDB.Add = SysOk then
+        DisplayStatus("Recipe Added");
+      else 
+        DisplayStatus("Error: Recipe DB");
+      end if;
+      EntryMode := Setup1Mode; 
     --elsif EntryMode = SetupRecipeIngred3 then
       --if IsValid(stemp, "i", 1) then      
         --IngredDB.Id := StringToInteger(sTemp);
@@ -809,15 +816,15 @@ program Recipe;
       if IsValid(stemp, "s", 15) then
         IngredDB.Name  :=  sTemp;
         if g_bUpdate = True then
-          PromptForEntry("Enter Ingredient Preact", SEtupIngredPreact, RealToString(IngredDB.Preact, 0, g_iDecimal1),2);
+          PromptForEntry("Enter Ingredient Reset", SetupIngredReset, RealToString(IngredDB.Reset, 0, g_iDecimal1),2);
         else
-          PromptForEntry("Enter Ingredient Preact", SEtupIngredPreact, Blank,2);
+          PromptForEntry("Enter Ingredient Reset", SetupIngredReset, Blank,2);
         end if;
       end if;
 
-    elsif EntryMode = SEtupIngredPreact then
+    elsif EntryMode = SetupIngredReset then
       if IsValid(stemp, "r", 1 ) then
-        IngredDB.Preact  :=  StringToReal(sTemp);
+        IngredDB.Reset  :=  StringToReal(sTemp);
         if g_bUpdate = True then
           if IngredDB.Update = SysOk then
             DisplayStatus("Ingredient " + IntegerToString(IngredDB.Id,0) + " Updated");
@@ -1348,6 +1355,9 @@ program Recipe;
       EntryMode := NoMode;
 			DisplayStatus(Blank);
       TurnOffAllOutputs;
+
+    elsif g_iWidget = img58 then
+      StartButton;
 
     end if;
 
