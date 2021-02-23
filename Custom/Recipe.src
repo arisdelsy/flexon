@@ -131,7 +131,7 @@ program Recipe;
   begin
     
     DisableSP(1);
-    DisableSP(2);
+    --DisableSP(2);
     --DisableSP(3);
     --DisableSP(4);
     
@@ -516,20 +516,20 @@ program Recipe;
       end if; 
     end if; 
 
-    IngredDB.Id := RecipeDB.Ingred2;
-    if IngredDB.FindFirst(Ingred_Id) = SysOk then 
-      if RecipeDB.Target2 <> 00.00 then  -- Don't include ingredients with a target of zero 
-        i := i + 1;  
-        g_arRecipe[i].iRecipeId := RecipeDB.Id; 
-        g_arRecipe[i].sRecipeName := RecipeDB.Name; 
-        g_arRecipe[i].iIngredientId := IngredDB.Id; 
-        g_arRecipe[i].sIngredientName := IngredDB.Name;
-        g_arRecipe[i].rTargetWgt := RecipeDB.Target2;    
+    --IngredDB.Id := RecipeDB.Ingred2;
+    --if IngredDB.FindFirst(Ingred_Id) = SysOk then 
+      --if RecipeDB.Target2 <> 00.00 then  -- Don't include ingredients with a target of zero 
+        --i := i + 1;  
+        --g_arRecipe[i].iRecipeId := RecipeDB.Id; 
+        --g_arRecipe[i].sRecipeName := RecipeDB.Name; 
+        --g_arRecipe[i].iIngredientId := IngredDB.Id; 
+        --g_arRecipe[i].sIngredientName := IngredDB.Name;
+        --g_arRecipe[i].rTargetWgt := RecipeDB.Target2;    
         --g_arRecipe[i].rPreactWgt := IngredDB.Preact;
-        g_arRecipe[i].rResetWgt  := IngredDB.Reset;
-        SetSPValue(RecipeDB.Ingred2, g_arRecipe[i].rTargetWgt - g_arRecipe[i].rResetWgt);             
-      end if; 
-    end if;
+        --g_arRecipe[i].rResetWgt  := IngredDB.Reset;
+        --SetSPValue(RecipeDB.Ingred2, g_arRecipe[i].rTargetWgt - g_arRecipe[i].rResetWgt);             
+      --end if; 
+    --end if;
 
     --IngredDB.Id := RecipeDB.Ingred3;
     --if IngredDB.FindFirst(Ingred_Id) = SysOk then 
@@ -647,11 +647,11 @@ program Recipe;
         if StringToInteger(sTemp) = 0 then
 					RecipeDB.Ingred1 := 0;
 					RecipeDB.Target1 := 0.0;
-          if g_bUpdate = True then
-            PromptForEntry("Enter Recipe Ingredient ID #2", SetupRecipeIngred2, IntegerToString(RecipeDB.Ingred2, 0),2);
-          else
-            PromptForEntry("Enter Recipe Ingredient ID #2", SetupRecipeIngred2, Blank,2);
-          end if;         
+          --if g_bUpdate = True then
+            --PromptForEntry("Enter Recipe Ingredient ID #2", SetupRecipeIngred2, IntegerToString(RecipeDB.Ingred2, 0),2);
+          --else
+            --PromptForEntry("Enter Recipe Ingredient ID #2", SetupRecipeIngred2, Blank,2);
+          --end if;         
         elsif IngredDB.FindFirst(Ingred_Id) <> SysOk then
           PromptForEntry("Error Ingredient Not Found", SetupRecipeIngred1, Blank,2);    
         else
@@ -667,51 +667,51 @@ program Recipe;
     elsif EntryMode = SetupRecipeTarget1 then
       if IsValid(stemp, "r", 1 ) then
         RecipeDB.Target1 := StringToInteger(sTemp);  
-        if g_bUpdate = True then
-          PromptForEntry("Enter Recipe Ingredient ID #2", SetupRecipeIngred2, IntegerToString(RecipeDB.Ingred2, 0),2);
-        else
-          PromptForEntry("Enter Recipe Ingredient ID #2", SetupRecipeIngred2, Blank,2);
-        end if;       
-      end if;   
-
-    elsif EntryMode = SetupRecipeIngred2 then
-      if IsValid(stemp, "i", 1) then      
-        IngredDB.Id := StringToInteger(sTemp);
-        if StringToInteger(sTemp) = 0 then
-					RecipeDB.Ingred2 := 0;
-					RecipeDB.Target2 := 0.0;
-          --if g_bUpdate = True then
-            --PromptForEntry("Enter Recipe Ingredient ID #3", SetupRecipeIngred3, IntegerToString(RecipeDB.Ingred3, 0),2);
-          --else
-            --PromptForEntry("Enter Recipe Ingredient ID #3", SetupRecipeIngred3, Blank,2);
-          --end if;         
-        elsif IngredDB.FindFirst(Ingred_Id) <> SysOk then
-          PromptForEntry("Error Ingredient Not Found", SetupRecipeIngred2, Blank,2);    
-        else
-          RecipeDB.Ingred2  :=  StringToInteger(sTemp);
-          if g_bUpdate = True then
-            PromptForEntry("Enter Ingredient #2 Target", SetupRecipeTarget2, RealToString(RecipeDB.Target2, 0, g_iDecimal1),2);
-          else
-            PromptForEntry("Enter Ingredient #2 Target", SetupRecipeTarget2, Blank,2);
-          end if;
-        end if;
-      end if;
-
-    elsif EntryMode = SetupRecipeTarget2 then
-      if IsValid(stemp, "r", 1 ) then
-        RecipeDB.Target2 := StringToInteger(sTemp);
         --if g_bUpdate = True then
-          --PromptForEntry("Enter Recipe Ingredient ID #3", SetupRecipeIngred3, IntegerToString(RecipeDB.Ingred3, 0),2);
+          --PromptForEntry("Enter Recipe Ingredient ID #2", SetupRecipeIngred2, IntegerToString(RecipeDB.Ingred2, 0),2);
         --else
-          --PromptForEntry("Enter Recipe Ingredient ID #3", SetupRecipeIngred3, Blank,2);
+          --PromptForEntry("Enter Recipe Ingredient ID #2", SetupRecipeIngred2, Blank,2);
         --end if;       
-      end if;       
+      end if;   
       if RecipeDB.Add = SysOk then
         DisplayStatus("Recipe Added");
       else 
         DisplayStatus("Error: Recipe DB");
       end if;
       EntryMode := Setup1Mode; 
+    --elsif EntryMode = SetupRecipeIngred2 then
+      --if IsValid(stemp, "i", 1) then      
+        --IngredDB.Id := StringToInteger(sTemp);
+        --if StringToInteger(sTemp) = 0 then
+					--RecipeDB.Ingred2 := 0;
+					--RecipeDB.Target2 := 0.0;
+          --if g_bUpdate = True then
+            --PromptForEntry("Enter Recipe Ingredient ID #3", SetupRecipeIngred3, IntegerToString(RecipeDB.Ingred3, 0),2);
+          --else
+            --PromptForEntry("Enter Recipe Ingredient ID #3", SetupRecipeIngred3, Blank,2);
+          --end if;         
+        --elsif IngredDB.FindFirst(Ingred_Id) <> SysOk then
+          --PromptForEntry("Error Ingredient Not Found", SetupRecipeIngred2, Blank,2);    
+        --else
+          --RecipeDB.Ingred2  :=  StringToInteger(sTemp);
+          --if g_bUpdate = True then
+            --PromptForEntry("Enter Ingredient #2 Target", SetupRecipeTarget2, RealToString(RecipeDB.Target2, 0, g_iDecimal1),2);
+          --else
+            --PromptForEntry("Enter Ingredient #2 Target", SetupRecipeTarget2, Blank,2);
+          --end if;
+        --end if;
+      --end if;
+
+    --elsif EntryMode = SetupRecipeTarget2 then
+      --if IsValid(stemp, "r", 1 ) then
+        --RecipeDB.Target2 := StringToInteger(sTemp);
+        --if g_bUpdate = True then
+          --PromptForEntry("Enter Recipe Ingredient ID #3", SetupRecipeIngred3, IntegerToString(RecipeDB.Ingred3, 0),2);
+        --else
+          --PromptForEntry("Enter Recipe Ingredient ID #3", SetupRecipeIngred3, Blank,2);
+        --end if;       
+      --end if;       
+
     --elsif EntryMode = SetupRecipeIngred3 then
       --if IsValid(stemp, "i", 1) then      
         --IngredDB.Id := StringToInteger(sTemp);
@@ -808,7 +808,7 @@ program Recipe;
             PromptForEntry("Enter Ingredient Name", SetupIngredName, Blank,0);
           end if; 
         else
-          PromptForEntry("Error Ingredient Id (1-2) - Retry", SetupIngredId, Blank,2);
+          PromptForEntry("Error Ingredient Id - Retry", SetupIngredId, Blank,2);
         end if;
       end if;
 
@@ -1131,8 +1131,8 @@ program Recipe;
     elsif BatchMode = Filling and Paused = No then 
       if g_arRecipe[g_iCurrentIngredient].iIngredientId = 1 then
         EnableSP(1);
-      elsif g_arRecipe[g_iCurrentIngredient].iIngredientId = 2 then
-        EnableSP(2); 
+      --elsif g_arRecipe[g_iCurrentIngredient].iIngredientId = 2 then
+        --EnableSP(2); 
       --elsif g_arRecipe[g_iCurrentIngredient].iIngredientId = 3 then
         --EnableSP(3); 
       --elsif g_arRecipe[g_iCurrentIngredient].iIngredientId = 4 then
@@ -1220,14 +1220,14 @@ program Recipe;
     
   end;  
 
-  handler SP2Trip; -- Ingredient #2 Setpoint
-  begin
+  --handler SP2Trip; -- Ingredient #2 Setpoint
+  --begin
       
-    DisableSP(2);
-    BatchMode := WaitSSFull;
-    RestartProcess; 
+    --DisableSP(2);
+    --BatchMode := WaitSSFull;
+    --RestartProcess; 
     
-  end;
+  --end;
 
   --handler SP3Trip; -- Ingredient #3 Setpoint
   --begin  
