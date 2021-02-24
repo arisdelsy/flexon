@@ -4,7 +4,7 @@
   <IndicatorModel value="1280" />
   <IndicatorVersion value="1.06" />
   <ChildAssembly value="rev1280.v304.dll" />
-  <ConfigHash value="132 247 206 182 86 231 245 139 32 186 49 1 30 94 204 213 204 45 36 198 " />
+  <ConfigHash value="85 1 37 158 158 26 27 148 100 86 98 31 176 14 129 51 59 249 7 136 " />
   <CODFile value="C:\AACode\1280_Recipe_PN181076\source\Recipe.cod" />
   <Config>SC.ALIAS#1=Scale1
 SC.CAPACITY#1=10000
@@ -692,7 +692,7 @@ DIO.7#0=OUTPUT
 DIO.ALIAS.7#0=DIO0_7
 DIO.8#0=OFF
 DIO.ALIAS.8#0=DIO0_8
-DB.SCHEMA#1=4,0,Id,3,4,Name,7,15,Preact,5,8,Reset,5,8
+DB.SCHEMA#1=2,0,Id,3,4,Name,7,15,Preact,5,8,Reset,5,8
 DB.ALIAS#1=Ingred
 DB.SCHEMA#2=200,0,Id,3,4,Name,7,15,Ingred1,3,4,Target1,5,8,Reset1,5,8,Ingred2,3,4,Target2,5,8,Reset2,5,8
 DB.ALIAS#2=Recipe
