@@ -3,6 +3,10 @@
 -- Program Name: Recipe
 
 ------------------------------------------------------------------------------
+-----------------------------Arlington Scale Company--------------------------
+------------------------------------------------------------------------------
+-------------------------------ASC VERSION 1.0--------------------------------
+--Goals on GitHub Issues page
 
 program Recipe; 
  
@@ -896,6 +900,8 @@ program Recipe;
           
   end; 
 
+
+
   procedure setupScreen;
   i : integer;
   begin
@@ -1211,6 +1217,110 @@ program Recipe;
     
   end;  
   
+  handler Timer22Trip;    -- NEW Batching Timer 
+    rScaleWgt : real;    
+  begin    
+	
+    if BatchMode = WaitSSTare and Paused = No then
+      InMotion(1, iMotion);   
+      if iMotion = 0 then 
+        GetGross(1 , g_uUnits, rScaleWgt);
+				
+        if SetTare(1 , g_uUnits, rScaleWgt) = SysOk then
+          SetMode(1 , NetMode);          
+          BatchMode := Filling;
+          --Dig I/O on  
+          SetDigout(0, DIO0_1, 1);
+        else
+          SetLabelText(lbSts1, "Trying to Tare Scale");
+        end if;
+      else
+        SetLabelText(lbSts1, "...In Motion..."); 
+      end if;      
+                
+    elsif BatchMode = Filling and Paused = No then 
+      if g_arRecipe[g_iCurrentIngredient].iIngredientId = 1 then
+        EnableSP(1);
+      --elsif g_arRecipe[g_iCurrentIngredient].iIngredientId = 2 then
+        --EnableSP(2); 
+      --elsif g_arRecipe[g_iCurrentIngredient].iIngredientId = 3 then
+        --EnableSP(3); 
+      --elsif g_arRecipe[g_iCurrentIngredient].iIngredientId = 4 then
+        --EnableSP(4); 
+      end if; 
+      SetLabelText(lbSts1, "Filling " + g_arRecipe[g_iCurrentIngredient].sIngredientName + " to " + RealToString(g_arRecipe[g_iCurrentIngredient].rTargetWgt,0,g_iDecimal1) + " " + GetCurrentUnitsString(1)); 
+      StopTimer(1);
+
+    elsif BatchMode = WaitSSFull and Paused = No then 
+      
+      InMotion(1, iMotion); 
+      if iMotion = 0 then        
+        GetNet(1, g_uUnits, g_arRecipe[g_iCurrentIngredient].rActualWgt);    
+        RefreshMainDisplay;
+        
+        if g_iCurrentIngredient >= g_iTotalNbrIngredients then 
+          ClearTare(Scale1);  
+          SetLabelText(lbSts1, Blank);
+          if g_rScaleDischargeTime <> 0.0 then        
+            BatchMode := Discharging; 
+          else
+            SetDigout(0, g_coDischarge, g_ciDigOutOff); 
+            StopTimer(1);                                        
+            BatchMode := Complete;         
+            SetLabelText(lbSts1, "Batch Complete");  
+            PrintTicket;
+            --Digital I/O turned off
+            SetDigout(0, DIO0_1, 0);
+            Paused := No;      
+            UnLockMajorKeys;  
+            ClearStatus(200);  
+          end if;                    
+        else   
+          g_iCurrentIngredient := g_iCurrentIngredient + 1; 
+          BatchMode := WaitSSTare;       
+        end if;    
+        
+      else
+        SetLabelText(lbSts1, "...In Motion...");
+      end if;       
+      
+   elsif BatchMode = Discharging and Paused = No then 
+      
+      SelectScale(Scale1);
+      GetGross(Scale1, g_uUnits, rScaleWgt);
+      if rScaleWgt <= g_rScaleEmptyWeight then   
+        g_iDelayCnt :=  0; 
+        BatchMode := DischargeDelay;   
+      else   
+        SetDigout(0, g_coDischarge, g_ciDigOutOn);                                     
+        SetLabelText(lbSts1, "Discharging");
+        --Turn I/O On
+        SetDigout(0, DIO0_2, 1);
+      end if;  
+      
+    elsif BatchMode = DischargeDelay and Paused = No then
+
+      g_iDelayCnt := g_iDelayCnt + 1;  
+      if g_iDelayCnt >= g_rScaleDischargeTime * 10 then    
+        SetDigout(0, g_coDischarge, g_ciDigOutOff); 
+        StopTimer(1);                                        
+        BatchMode := Complete;         
+        SetLabelText(lbSts1, "Batch Complete"); 
+        --Turn I/O Off
+        TurnOffAllOutputs; 
+        PrintTicket;  
+        Paused := No;      
+        UnLockMajorKeys;    
+        ClearStatus(200);  
+        Setwidgetvisibility(setup, Von);        
+      else    
+        SetLabelText(lbSts1, "...Discharge Delay...");
+      end if; 
+
+    end if;        
+    
+  end;  
+
   handler SP1Trip; -- Ingredient #1 Setpoint
   begin 
       
