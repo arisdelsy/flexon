@@ -966,7 +966,7 @@ program Recipe;
       g_iCurrentIngredient := 1;
       Paused := No;
       EntryMode := NoMode;  
-      BatchMode := WaitSSTare;  
+      --BatchMode := WaitSSTare;  
       LockMajorKeys;  
       Setwidgetvisibility(setup, Voff);     
       SetupStartTimer(1, 10, TimerContinuous);
@@ -1241,12 +1241,8 @@ program Recipe;
     elsif BatchMode = Filling and Paused = No then 
       if g_arRecipe[g_iCurrentIngredient].iIngredientId = 1 then
         EnableSP(1);
-      --elsif g_arRecipe[g_iCurrentIngredient].iIngredientId = 2 then
-        --EnableSP(2); 
-      --elsif g_arRecipe[g_iCurrentIngredient].iIngredientId = 3 then
-        --EnableSP(3); 
-      --elsif g_arRecipe[g_iCurrentIngredient].iIngredientId = 4 then
-        --EnableSP(4); 
+      elsif g_arRecipe[g_iCurrentIngredient].iIngredientId = 2 then
+        EnableSP(2); 
       end if; 
       SetLabelText(lbSts1, "Filling " + g_arRecipe[g_iCurrentIngredient].sIngredientName + " to " + RealToString(g_arRecipe[g_iCurrentIngredient].rTargetWgt,0,g_iDecimal1) + " " + GetCurrentUnitsString(1)); 
       StopTimer(1);
@@ -1330,32 +1326,14 @@ program Recipe;
     
   end;  
 
-  --handler SP2Trip; -- Ingredient #2 Setpoint
-  --begin
+  handler SP2Trip; -- Ingredient #2 Setpoint
+  begin
       
-    --DisableSP(2);
-    --BatchMode := WaitSSFull;
-    --RestartProcess; 
+    DisableSP(2);
+    BatchMode := WaitSSFull;
+    RestartProcess; 
     
-  --end;
-
-  --handler SP3Trip; -- Ingredient #3 Setpoint
-  --begin  
-
-    --DisableSP(3);
-    --BatchMode := WaitSSFull;
-    --RestartProcess; 
-    
-  --end; 
-
-  --handler SP4Trip; -- Ingredient #4 Setpoint
-  --begin  
-
-    --DisableSP(4);
-    --BatchMode := WaitSSFull;
-    --RestartProcess; 
-    
-  --end;      
+  end;     
 
   handler Timer29Trip;  -- Removes display status text  
   begin 
