@@ -1,5 +1,6 @@
 -- Scale Aliases
 Scale1    : constant integer := 1;
+Scale2    : constant integer := 2;
 
 -- Digital I/O Aliases
 DIOCRD0   : constant integer := 0;
@@ -20,7 +21,6 @@ DIO0_8    : constant integer := 8;
 type IngredDatabase is database ("Ingred")
         Id: Integer;
       Name: String;
-    Preact: Real;
      Reset: Real;
 end database;
 type RecipeDatabase is database ("Recipe")
@@ -36,8 +36,7 @@ end database;
 
 Ingred_Id       : constant integer := 1;
 Ingred_Name     : constant integer := 2;
-Ingred_Preact   : constant integer := 3;
-Ingred_Reset    : constant integer := 4;
+Ingred_Reset    : constant integer := 3;
 
 Recipe_Id       : constant integer := 1;
 Recipe_Name     : constant integer := 2;
