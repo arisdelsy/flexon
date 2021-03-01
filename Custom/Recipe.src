@@ -1088,7 +1088,9 @@ program Recipe;
   handler Timer22Trip;    -- NEW Batching Timer 
     rScaleWgt : real;    
   begin    
-	
+    if BatchMode = Filling then
+      SetWidgetColor(bar27, 'YELLOW');
+      
 
   end;  
 
