@@ -1005,8 +1005,8 @@ program Recipe;
     elsif BatchMode = Filling and Paused = No then 
       if g_arRecipe[g_iCurrentIngredient].iIngredientId = 1 then
         EnableSP(1);
-      --elsif g_arRecipe[g_iCurrentIngredient].iIngredientId = 2 then
-        --EnableSP(2); 
+      elsif g_arRecipe[g_iCurrentIngredient].iIngredientId = 2 then
+        EnableSP(2); 
       --elsif g_arRecipe[g_iCurrentIngredient].iIngredientId = 3 then
         --EnableSP(3); 
       --elsif g_arRecipe[g_iCurrentIngredient].iIngredientId = 4 then
@@ -1088,9 +1088,12 @@ program Recipe;
   handler Timer22Trip;    -- NEW Batching Timer 
     rScaleWgt : real;    
   begin    
-    if BatchMode = Filling then
+    if BatchMode = Filling and Paused = No then
       SetWidgetColor(bar27, 'YELLOW');
-      
+      SetDigout(1, 1);
+      SetDigout(2, 1);
+
+    elsif BatchMode = 
 
   end;  
 
