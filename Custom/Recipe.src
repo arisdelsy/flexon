@@ -1084,16 +1084,26 @@ program Recipe;
     end if;        
     
   end;  
-  
+  -----------------------------------------------------------------------
   handler Timer22Trip;    -- NEW Batching Timer 
     rScaleWgt : real;    
   begin    
-    if BatchMode = Filling and Paused = No then
-      SetWidgetColor(bar27, 'YELLOW');
+    if BatchMode = Empty and Paused = No then
+      SetWidgetColor(bar27, 'RED');
       SetDigout(1, 1);
       SetDigout(2, 1);
+      BatchMode := Filling;
 
-    elsif BatchMode = 
+    elsif BatchMode = Filling and Paused = No then
+      SetWidgetColor(bar27, 'YELLOW');
+
+    elsif BatchMode = Discharging and Paused = No then
+      SetWidgetColor(bar27, 'GREEN');
+      SetDigout(3, 1);
+      SetDigout(4, 1);
+
+
+    end if;
 
   end;  
 
