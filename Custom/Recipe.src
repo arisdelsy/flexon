@@ -1087,21 +1087,23 @@ program Recipe;
   -----------------------------------------------------------------------
   handler Timer22Trip;    -- NEW Batching Timer 
     rScaleWgt : real;    
-  begin    
-    if BatchMode = Empty and Paused = No then
+  begin
+    GetNet(1, rScaleWgt);
+
+    if rScaleWgt <= rReset then
       SetWidgetColor(bar27, 'RED');
       SetDigout(1, 1);
       SetDigout(2, 1);
-      BatchMode := Filling;
 
-    elsif BatchMode = Filling and Paused = No then
+    elsif rScaleWgt > rReset and rScaleWgt < rTargetWgt then
       SetWidgetColor(bar27, 'YELLOW');
 
-    elsif BatchMode = Discharging and Paused = No then
+    elsif rScaleWgt >= rTargetWgt then
       SetWidgetColor(bar27, 'GREEN');
       SetDigout(3, 1);
       SetDigout(4, 1);
-
+      StopTimer(22);
+      ClearStatus(200);
 
     end if;
 
