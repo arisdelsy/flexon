@@ -1087,6 +1087,8 @@ program Recipe;
   end;  
   -----------------------------------------------------------------------
   handler Timer22Trip;    -- NEW Batching Timer 
+                          --Just a concept still; need to add the DB method that we are pulling from unless we assign
+                          --the variables earlier in the code via a different procedure.
     rScaleWgt : real;    
   begin
     GetNet(1, rScaleWgt);
